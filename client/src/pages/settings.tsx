@@ -373,8 +373,8 @@ export default function Settings() {
                                 <div className="relative">
                                   <Input 
                                     type={showApiKeys.googleClientId ? "text" : "password"}
-                                    value={showApiKeys.googleClientId ? field.value : maskApiKey(field.value || "")}
-                                    onChange={field.onChange}
+                                    {...field}
+                                    value={showApiKeys.googleClientId ? field.value || "" : maskApiKey(field.value || "")}
                                   />
                                   <Button
                                     type="button"
@@ -402,8 +402,8 @@ export default function Settings() {
                                 <div className="relative">
                                   <Input 
                                     type={showApiKeys.googleClientSecret ? "text" : "password"}
-                                    value={showApiKeys.googleClientSecret ? field.value : maskApiKey(field.value || "")}
-                                    onChange={field.onChange}
+                                    {...field}
+                                    value={showApiKeys.googleClientSecret ? field.value || "" : maskApiKey(field.value || "")}
                                   />
                                   <Button
                                     type="button"

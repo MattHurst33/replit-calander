@@ -130,7 +130,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(qualificationRules)
       .where(eq(qualificationRules.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getUserMeetings(userId: number, limit = 50): Promise<Meeting[]> {
@@ -173,19 +173,19 @@ export class DatabaseStorage implements IStorage {
     disqualified: number;
     needsReview: number;
   }> {
-    let query = db
-      .select()
-      .from(meetings)
-      .where(eq(meetings.userId, userId));
-
+    const conditions = [eq(meetings.userId, userId)];
+    
     if (startDate) {
-      query = query.where(gte(meetings.startTime, startDate));
+      conditions.push(gte(meetings.startTime, startDate));
     }
     if (endDate) {
-      query = query.where(lte(meetings.startTime, endDate));
+      conditions.push(lte(meetings.startTime, endDate));
     }
 
-    const allMeetings = await query;
+    const allMeetings = await db
+      .select()
+      .from(meetings)
+      .where(and(...conditions));
 
     return {
       total: allMeetings.length,
