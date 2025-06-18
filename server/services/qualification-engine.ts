@@ -1,8 +1,13 @@
 import type { IStorage } from "../storage";
 import type { Meeting, QualificationRule } from "@shared/schema";
+import { GoogleCalendarService } from "./google-calendar";
 
 export class QualificationEngine {
-  constructor(private storage: IStorage) {}
+  private googleCalendar: GoogleCalendarService;
+
+  constructor(private storage: IStorage) {
+    this.googleCalendar = new GoogleCalendarService();
+  }
 
   async qualifyMeeting(meetingId: number): Promise<void> {
     const meeting = await this.storage.getUserMeetings(1, 1000);
@@ -45,6 +50,11 @@ export class QualificationEngine {
       qualificationReason,
       lastProcessed: new Date(),
     });
+
+    // If meeting is disqualified, free up the Google Calendar slot
+    if (status === 'disqualified' && targetMeeting.externalId) {
+      await this.freeCalendarSlot(targetMeeting.userId, targetMeeting.externalId);
+    }
   }
 
   private evaluateRule(meeting: Meeting, rule: QualificationRule): { passed: boolean; reason: string } {
@@ -125,5 +135,38 @@ export class QualificationEngine {
     const missingFields = criticalFields.filter(field => !field).length;
     
     return missingFields >= 2; // If 2 or more critical fields are missing
+  }
+
+  private async freeCalendarSlot(userId: number, externalId: string): Promise<void> {
+    try {
+      // Get Google Calendar integration
+      const googleCalendarIntegration = await this.storage.getIntegration(userId, 'google_calendar');
+      
+      if (!googleCalendarIntegration || !googleCalendarIntegration.accessToken) {
+        console.log('Google Calendar integration not found for user', userId);
+        return;
+      }
+
+      // Extract event ID from external ID
+      let eventId = externalId;
+      if (externalId.startsWith('calendly_') || externalId.startsWith('gcal_')) {
+        // If it's a Calendly event, we might need to find the corresponding Google Calendar event
+        // For now, we'll skip Calendly events since they manage their own calendar
+        if (externalId.startsWith('calendly_')) {
+          console.log('Skipping Calendly event for calendar update:', externalId);
+          return;
+        }
+        // Remove prefix for Google Calendar events
+        eventId = externalId.replace('gcal_', '');
+      }
+
+      // Mark the event as free in Google Calendar
+      await this.googleCalendar.markEventAsFree(googleCalendarIntegration.accessToken, eventId);
+      
+      console.log(`Freed calendar slot for disqualified meeting: ${eventId}`);
+    } catch (error) {
+      console.error('Failed to free calendar slot:', error);
+      // Don't throw the error to prevent qualification process from failing
+    }
   }
 }

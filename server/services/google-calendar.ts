@@ -122,4 +122,47 @@ export class GoogleCalendarService {
       throw new Error('Failed to update event color');
     }
   }
+
+  async updateEventStatus(accessToken: string, eventId: string, status: 'confirmed' | 'tentative' | 'cancelled'): Promise<void> {
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: status,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to update event status: ${response.statusText}`);
+    }
+  }
+
+  async markEventAsFree(accessToken: string, eventId: string): Promise<void> {
+    // Mark the event as cancelled and transparent to free up the time slot
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'cancelled',
+          transparency: 'transparent',
+          colorId: '11', // Red color to indicate disqualified
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to mark event as free: ${response.statusText}`);
+    }
+  }
 }
