@@ -557,17 +557,18 @@ export class MorningBriefingService {
   }
 
   async startScheduler() {
-    // Check every minute for upcoming meetings
+    // Check every minute for morning briefing time (8 AM)
     setInterval(async () => {
       try {
-        await this.schedulePreMeetingSummaries();
+        const now = new Date();
+        if (now.getHours() === 8 && now.getMinutes() === 0) {
+          await this.sendMorningBriefing();
+        }
       } catch (error) {
-        console.error('Error in pre-meeting summary scheduler:', error);
+        console.error('Error in morning briefing scheduler:', error);
       }
     }, 60 * 1000); // Check every minute
 
-    console.log('Pre-meeting summary scheduler started');
+    console.log('Morning briefing scheduler started');
   }
 }
-
-export const preMeetingSummaryService = new PreMeetingSummaryService();

@@ -10,9 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Mail, Brain, AlertTriangle, Target, Wrench, Eye } from "lucide-react";
 
-interface PreMeetingSettings {
+interface MorningBriefingSettings {
   enabled: boolean;
-  leadTime: number;
+  sendTime: string;
   emailEnabled: boolean;
   includeObjections: boolean;
   includePainPoints: boolean;
@@ -43,8 +43,8 @@ export default function PreMeetingSettings() {
   const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
 
-  const { data: settings, isLoading } = useQuery<PreMeetingSettings>({
-    queryKey: ['/api/settings/pre-meeting'],
+  const { data: settings, isLoading } = useQuery<MorningBriefingSettings>({
+    queryKey: ['/api/settings/morning-briefing'],
   });
 
   const { data: meetings } = useQuery({
