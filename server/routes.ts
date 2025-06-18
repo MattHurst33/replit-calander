@@ -64,10 +64,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Test pre-meeting summary generation
-  app.post("/api/meetings/:id/preview-summary", async (req, res) => {
+  app.post("/api/meetings/:id/preview-summary", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const meetingId = parseInt(req.params.id);
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meetings = await storage.getUserMeetings(userId, 1000);
       const meeting = meetings.find(m => m.id === meetingId);
       
       if (!meeting) {
@@ -93,9 +94,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get pre-meeting automation settings
-  app.get("/api/settings/pre-meeting", async (req, res) => {
+  app.get("/api/settings/pre-meeting", isAuthenticated, async (req: any, res) => {
     try {
-      const settings = await storage.getUserSettings(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
       res.json({
         enabled: settings?.preMeetingEnabled || false,
         leadTime: settings?.preMeetingLeadTime || 2, // minutes before meeting
@@ -110,8 +112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update pre-meeting automation settings
-  app.patch("/api/settings/pre-meeting", async (req, res) => {
+  app.patch("/api/settings/pre-meeting", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const updates = req.body;
       const currentSettings = await storage.getUserSettings(MOCK_USER_ID) || {};
       
@@ -277,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Store integration
       await storage.createIntegration({
-        userId: MOCK_USER_ID,
+        userId: req.user.claims.sub,
         type: 'google_calendar',
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
@@ -292,9 +295,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync calendar events
-  app.post("/api/sync/calendar", async (req, res) => {
+  app.post("/api/sync/calendar", isAuthenticated, async (req: any, res) => {
     try {
-      const integration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
+      const userId = req.user.claims.sub;
+      const integration = await storage.getIntegration(userId, 'google_calendar');
       
       if (!integration || !integration.accessToken) {
         return res.status(400).json({ message: "Google Calendar not connected" });
@@ -304,11 +308,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process and store events
       for (const event of events) {
-        const existingMeeting = await storage.getMeetingByExternalId(MOCK_USER_ID, event.id);
+        const existingMeeting = await storage.getMeetingByExternalId(userId, event.id);
         
         if (!existingMeeting) {
           const meetingData = {
-            userId: MOCK_USER_ID,
+            userId,
             externalId: event.id,
             title: event.summary || '',
             description: event.description || '',
@@ -343,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const meeting = await storage.createMeeting({
           ...meetingData,
-          userId: MOCK_USER_ID,
+          userId: req.user.claims.sub,
         });
         
         // Run qualification
@@ -408,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Store integration
       await storage.createIntegration({
-        userId: MOCK_USER_ID,
+        userId: req.user.claims.sub,
         type: 'gmail',
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
@@ -423,10 +427,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send confirmation email to qualified meetings
-  app.post("/api/meetings/:id/send-confirmation", async (req, res) => {
+  app.post("/api/meetings/:id/send-confirmation", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { id } = req.params;
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meetings = await storage.getUserMeetings(userId, 1000);
       const meeting = meetings.find(m => m.id === parseInt(id));
       
       if (!meeting) {
@@ -437,7 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Can only send confirmations to qualified meetings" });
       }
 
-      const gmailIntegration = await storage.getIntegration(MOCK_USER_ID, 'gmail');
+      const gmailIntegration = await storage.getIntegration(userId, 'gmail');
       
       if (!gmailIntegration || !gmailIntegration.accessToken) {
         return res.status(400).json({ message: "Gmail not connected" });
