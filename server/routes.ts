@@ -94,6 +94,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get morning briefing settings
+  app.get("/api/settings/morning-briefing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      res.json({
+        enabled: settings?.morningBriefingEnabled ?? false,
+        sendTime: settings?.morningBriefingSendTime ?? "08:00",
+        emailEnabled: settings?.morningBriefingEmailEnabled ?? false,
+        includeRevenue: settings?.includeRevenue ?? false,
+        includeIndustry: settings?.includeIndustry ?? false,
+        includeContactInfo: settings?.includeContactInfo ?? false,
+        includeObjections: settings?.includeObjections ?? false,
+        includePainPoints: settings?.includePainPoints ?? false,
+        includeCurrentSolutions: settings?.includeCurrentSolutions ?? false
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch morning briefing settings" });
+    }
+  });
+
+  // Update morning briefing settings
+  app.patch("/api/settings/morning-briefing", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updates = req.body;
+      
+      const currentSettings = await storage.getUserSettings(userId) || {};
+      
+      const updatedSettings = {
+        ...currentSettings,
+        morningBriefingEnabled: updates.enabled ?? currentSettings.morningBriefingEnabled,
+        morningBriefingSendTime: updates.sendTime ?? currentSettings.morningBriefingSendTime,
+        morningBriefingEmailEnabled: updates.emailEnabled ?? currentSettings.morningBriefingEmailEnabled,
+        includeRevenue: updates.includeRevenue ?? currentSettings.includeRevenue,
+        includeIndustry: updates.includeIndustry ?? currentSettings.includeIndustry,
+        includeContactInfo: updates.includeContactInfo ?? currentSettings.includeContactInfo,
+        includeObjections: updates.includeObjections ?? currentSettings.includeObjections,
+        includePainPoints: updates.includePainPoints ?? currentSettings.includePainPoints,
+        includeCurrentSolutions: updates.includeCurrentSolutions ?? currentSettings.includeCurrentSolutions
+      };
+      
+      await storage.updateUserSettings(userId, updatedSettings);
+      
+      res.json({ success: true, settings: updatedSettings });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update morning briefing settings" });
+    }
+  });
+
   // Get pre-meeting automation settings
   app.get("/api/settings/pre-meeting", isAuthenticated, async (req: any, res) => {
     try {
