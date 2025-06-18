@@ -175,7 +175,15 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-4">
                   {meetings?.slice(0, 6).map((meeting) => (
-                    <MeetingCard key={meeting.id} meeting={meeting} />
+                    <MeetingCard 
+                      key={meeting.id} 
+                      meeting={meeting} 
+                      onUpdate={() => {
+                        queryClient.invalidateQueries({ queryKey: ['/api/meetings'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+                        queryClient.invalidateQueries({ queryKey: ['/api/analytics/no-shows'] });
+                      }}
+                    />
                   ))}
                   {meetings && meetings.length === 0 && (
                     <div className="text-center py-8">
