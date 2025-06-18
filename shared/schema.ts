@@ -208,6 +208,7 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 
 
 export type Integration = typeof integrations.$inferSelect;

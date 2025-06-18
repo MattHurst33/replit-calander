@@ -190,7 +190,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(qualificationRules)
       .where(eq(qualificationRules.id, id));
-    return result.rowCount > 0;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 
   // Meeting methods
@@ -236,20 +236,22 @@ export class DatabaseStorage implements IStorage {
     noShow: number;
     completed: number;
   }> {
-    let query = db
+    let baseConditions = [eq(meetings.userId, userId)];
+    
+    if (startDate) {
+      baseConditions.push(gte(meetings.startTime, startDate));
+    }
+    if (endDate) {
+      baseConditions.push(lte(meetings.startTime, endDate));
+    }
+
+    const query = db
       .select({
         status: meetings.status,
         count: count(),
       })
       .from(meetings)
-      .where(eq(meetings.userId, userId));
-
-    if (startDate) {
-      query = query.where(gte(meetings.startTime, startDate));
-    }
-    if (endDate) {
-      query = query.where(lte(meetings.startTime, endDate));
-    }
+      .where(and(...baseConditions));
 
     const stats = await query.groupBy(meetings.status);
 
@@ -294,17 +296,19 @@ export class DatabaseStorage implements IStorage {
     noShowsByCompanySize: Array<{ sizeRange: string; count: number }>;
     noShowsByRevenue: Array<{ revenueRange: string; count: number }>;
   }> {
-    let baseQuery = db
-      .select()
-      .from(meetings)
-      .where(eq(meetings.userId, userId));
-
+    let conditions = [eq(meetings.userId, userId)];
+    
     if (startDate) {
-      baseQuery = baseQuery.where(gte(meetings.startTime, startDate));
+      conditions.push(gte(meetings.startTime, startDate));
     }
     if (endDate) {
-      baseQuery = baseQuery.where(lte(meetings.startTime, endDate));
+      conditions.push(lte(meetings.startTime, endDate));
     }
+
+    const baseQuery = db
+      .select()
+      .from(meetings)
+      .where(and(...conditions));
 
     const totalMeetings = await baseQuery;
     const noShowMeetings = totalMeetings.filter(m => m.status === 'no_show');
@@ -474,7 +478,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(emailTemplates)
       .where(eq(emailTemplates.id, id));
-    return result.rowCount > 0;
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
 
