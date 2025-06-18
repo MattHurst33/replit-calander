@@ -184,7 +184,7 @@ export default function EmailAutomation() {
   };
 
   const defaultTemplates = {
-    qualified_appointment: `Hi {{prospect_name}},
+    qualified_appointment: `Hi {{"prospect_name"}},
 
 Thank you for scheduling our meeting! I'm excited to discuss how we can help {{company_name}} achieve its goals.
 
@@ -202,7 +202,7 @@ Looking forward to speaking with you!
 Best regards,
 {{your_name}}`,
 
-    follow_up: `Hi {{prospect_name}},
+    follow_up: `Hi {{"prospect_name"}},
 
 Thank you for taking the time to meet with me yesterday. I enjoyed our conversation about {{company_name}}'s goals and challenges.
 
@@ -219,7 +219,7 @@ I'm here if you have any questions or would like to schedule a follow-up discuss
 Best regards,
 {{your_name}}`,
 
-    reminder: `Hi {{prospect_name}},
+    reminder: `Hi {{"prospect_name"}},
 
 This is a friendly reminder about our upcoming meeting tomorrow:
 

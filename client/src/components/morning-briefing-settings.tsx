@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -26,16 +26,33 @@ export default function MorningBriefingSettings() {
   const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings = {
+    enabled: false,
+    sendTime: "08:00", 
+    emailEnabled: false,
+    includeRevenue: false,
+    includeIndustry: false,
+    includeContactInfo: false,
+    includeObjections: false,
+    includePainPoints: false,
+    includeCurrentSolutions: false
+  }, isLoading } = useQuery({
     queryKey: ['/api/settings/morning-briefing']
   });
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<MorningBriefingSettings>) => {
-      return await apiRequest('/api/settings/morning-briefing', {
+      const response = await fetch('/api/settings/morning-briefing', {
         method: 'PATCH',
-        body: newSettings
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newSettings),
       });
+      if (!response.ok) {
+        throw new Error('Failed to update settings');
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({
