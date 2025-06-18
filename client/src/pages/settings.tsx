@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -59,6 +60,7 @@ const systemSchema = z.object({
   syncInterval: z.string(),
   qualificationMode: z.string(),
   calendarColorCoding: z.boolean(),
+  autoFreeCalendarSlots: z.boolean(),
   autoArchive: z.boolean(),
   archiveAfterDays: z.string(),
 });
@@ -71,6 +73,11 @@ type SystemSettings = z.infer<typeof systemSchema>;
 export default function Settings() {
   const { toast } = useToast();
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
+
+  // Fetch current user settings
+  const { data: userSettings } = useQuery({
+    queryKey: ['/api/settings'],
+  });
 
   // Mock current settings - in real app these would come from API
   const [profileSettings, setProfileSettings] = useState<ProfileSettings>({
@@ -103,6 +110,7 @@ export default function Settings() {
     syncInterval: "15",
     qualificationMode: "automatic",
     calendarColorCoding: true,
+    autoFreeCalendarSlots: userSettings?.autoFreeCalendarSlots ?? true,
     autoArchive: true,
     archiveAfterDays: "90",
   });
@@ -816,6 +824,27 @@ export default function Settings() {
                               <FormLabel className="text-base">Calendar Color Coding</FormLabel>
                               <div className="text-sm text-muted-foreground">
                                 Automatically color-code calendar events based on qualification status
+                              </div>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={systemForm.control}
+                        name="autoFreeCalendarSlots"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base">Auto-Free Calendar Slots</FormLabel>
+                              <div className="text-sm text-muted-foreground">
+                                Automatically mark Google Calendar events as free when prospects are disqualified
                               </div>
                             </div>
                             <FormControl>

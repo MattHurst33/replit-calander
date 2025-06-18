@@ -407,6 +407,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user settings
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getUserSettings(MOCK_USER_ID);
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user settings" });
+    }
+  });
+
+  // Update user settings
+  app.patch("/api/settings", async (req, res) => {
+    try {
+      const settings = req.body;
+      const updatedUser = await storage.updateUserSettings(MOCK_USER_ID, settings);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser.settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user settings" });
+    }
+  });
+
   // Send daily report
   app.post("/api/reports/daily", async (req, res) => {
     try {
