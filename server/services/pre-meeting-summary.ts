@@ -15,7 +15,7 @@ export interface ProspectSummary {
   meetingContext: string;
 }
 
-export class PreMeetingSummaryService {
+export class MorningBriefingService {
   private emailService: EmailService;
   private gmailService: GmailService;
 
@@ -24,45 +24,53 @@ export class PreMeetingSummaryService {
     this.gmailService = new GmailService();
   }
 
-  async schedulePreMeetingSummaries() {
+  async sendMorningBriefing() {
     const now = new Date();
-    const twoMinutesFromNow = new Date(now.getTime() + 2 * 60 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    
     const meetings = await storage.getUserMeetings(1, 1000); // Get all meetings for user 1
 
-    const upcomingMeetings = meetings.filter(meeting => {
+    const todaysMeetings = meetings.filter(meeting => {
       const startTime = new Date(meeting.startTime);
-      return startTime > now && startTime <= twoMinutesFromNow && 
+      return startTime >= todayStart && startTime < todayEnd && 
              (meeting.status === 'qualified' || meeting.status === 'needs_review');
     });
 
-    for (const meeting of upcomingMeetings) {
-      await this.generateAndSendSummary(meeting);
+    if (todaysMeetings.length === 0) {
+      return; // No meetings today, skip briefing
     }
+
+    await this.generateAndSendBriefing(todaysMeetings);
   }
 
-  private async generateAndSendSummary(meeting: Meeting) {
+  private async generateAndSendBriefing(meetings: Meeting[]) {
     try {
-      const summary = await this.generateProspectSummary(meeting);
-      const emailContent = this.generateSummaryEmail(summary, meeting);
+      const summaries = await Promise.all(
+        meetings.map(meeting => this.generateProspectSummary(meeting))
+      );
+      
+      const emailContent = this.generateMorningBriefingEmail(meetings, summaries);
       
       // Get user email (in production, this would come from authenticated user)
-      const user = await storage.getUser(meeting.userId);
+      const user = await storage.getUser(meetings[0].userId);
       if (!user?.email) return;
 
       // Try Gmail first, fallback to SMTP
-      const gmailIntegration = await storage.getIntegration(meeting.userId, 'gmail');
+      const integrations = await storage.getUserIntegrations(meetings[0].userId);
+      const gmailIntegration = integrations.find(i => i.type === 'gmail');
       
       if (gmailIntegration?.accessToken) {
         // Send via Gmail API
-        await this.sendViaGmail(gmailIntegration.accessToken, user.email, emailContent, meeting);
+        await this.sendBriefingViaGmail(gmailIntegration.accessToken, user.email, emailContent);
       } else {
         // Send via SMTP
-        await this.emailService.sendPreMeetingSummary(user.email, summary, meeting);
+        await this.emailService.sendMorningBriefing(user.email, meetings, summaries);
       }
 
-      console.log(`Pre-meeting summary sent for meeting ${meeting.id}`);
+      console.log(`Morning briefing sent for ${meetings.length} meetings`);
     } catch (error) {
-      console.error(`Failed to send pre-meeting summary for meeting ${meeting.id}:`, error);
+      console.error(`Failed to send morning briefing:`, error);
     }
   }
 
@@ -280,6 +288,119 @@ export class PreMeetingSummaryService {
     return context.join(" | ");
   }
 
+  private generateMorningBriefingEmail(meetings: Meeting[], summaries: ProspectSummary[]): string {
+    const today = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+
+    const meetingCards = meetings.map((meeting, index) => {
+      const summary = summaries[index];
+      const startTime = new Date(meeting.startTime);
+      const timeString = startTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+
+      return `
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white;">
+          <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #1f2937; font-size: 18px;">${timeString} - ${summary.name}</h3>
+            <span style="background: ${meeting.status === 'qualified' ? '#10b981' : '#f59e0b'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+              ${meeting.status === 'qualified' ? 'Qualified' : 'Needs Review'}
+            </span>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <strong style="color: #374151;">Company:</strong> ${summary.company}<br>
+              <strong style="color: #374151;">Industry:</strong> ${summary.industry}<br>
+              <strong style="color: #374151;">Revenue:</strong> ${summary.revenue}
+            </div>
+            <div>
+              <strong style="color: #374151;">Context:</strong><br>
+              <span style="font-size: 14px; color: #6b7280;">${summary.meetingContext}</span>
+            </div>
+          </div>
+
+          ${summary.painPoints.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <strong style="color: #dc2626;">Key Pain Points:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px; color: #374151;">
+              ${summary.painPoints.map(point => `<li>${point}</li>`).join('')}
+            </ul>
+          </div>
+          ` : ''}
+
+          ${summary.likelyObjections.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <strong style="color: #d97706;">Likely Objections:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px; color: #374151;">
+              ${summary.likelyObjections.map(objection => `<li>${objection}</li>`).join('')}
+            </ul>
+          </div>
+          ` : ''}
+
+          ${summary.currentSolutions.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <strong style="color: #7c3aed;">Current Solutions:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px; color: #374151;">
+              ${summary.currentSolutions.map(solution => `<li>${solution}</li>`).join('')}
+            </ul>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Morning Briefing - ${today}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+  
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Good Morning! 🌅</h1>
+    <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your briefing for ${today}</p>
+    <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; margin-top: 20px;">
+      <div style="font-size: 24px; font-weight: bold;">${meetings.length}</div>
+      <div style="font-size: 14px; opacity: 0.8;">meeting${meetings.length !== 1 ? 's' : ''} scheduled today</div>
+    </div>
+  </div>
+
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-bottom: 20px;">
+    <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px;">Today's Meeting Schedule</h2>
+    ${meetingCards}
+  </div>
+
+  <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
+    <h3 style="margin: 0 0 10px 0; color: #1f2937;">Quick Prep Tips</h3>
+    <ul style="margin: 0; padding-left: 20px; color: #4b5563;">
+      <li>Review each prospect's pain points before the call</li>
+      <li>Prepare responses to likely objections</li>
+      <li>Research their current solutions for better positioning</li>
+      <li>Have relevant case studies ready for their industry</li>
+    </ul>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+    <p style="margin: 0; color: #6b7280; font-size: 14px;">
+      This briefing was automatically generated by your Calendar Grooming Agent
+    </p>
+  </div>
+
+</body>
+</html>
+    `;
+  }
+
   private generateSummaryEmail(summary: ProspectSummary, meeting: Meeting): string {
     const startTime = new Date(meeting.startTime);
     const timeString = startTime.toLocaleTimeString('en-US', { 
@@ -366,6 +487,39 @@ export class PreMeetingSummaryService {
 </body>
 </html>
     `.trim();
+  }
+
+  private async sendBriefingViaGmail(accessToken: string, userEmail: string, emailContent: string) {
+    const today = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    const subject = `Morning Briefing - ${today}`;
+    const rawEmail = this.createRawEmail(userEmail, subject, emailContent);
+
+    try {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raw: rawEmail
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gmail API error: ${response.statusText}`);
+      }
+
+      console.log('Morning briefing sent via Gmail successfully');
+    } catch (error) {
+      console.error('Error sending morning briefing via Gmail:', error);
+      throw error;
+    }
   }
 
   private async sendViaGmail(accessToken: string, userEmail: string, emailContent: string, meeting: Meeting) {
