@@ -50,9 +50,11 @@ export const meetings = pgTable("meetings", {
   companySize: integer("company_size"),
   industry: text("industry"),
   budget: decimal("budget", { precision: 15, scale: 2 }),
-  status: text("status").notNull().default('pending'), // 'qualified', 'disqualified', 'needs_review', 'pending'
+  status: text("status").notNull().default('pending'), // 'qualified', 'disqualified', 'needs_review', 'pending', 'no_show', 'completed'
   qualificationReason: text("qualification_reason"),
   formData: jsonb("form_data").$type<Record<string, any>>(),
+  noShowMarkedAt: timestamp("no_show_marked_at"),
+  noShowReason: text("no_show_reason"), // 'did_not_attend', 'cancelled_late', 'rescheduled_no_show'
   lastProcessed: timestamp("last_processed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -407,6 +407,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get no-show analytics
+  app.get("/api/analytics/no-shows", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const analytics = await storage.getNoShowAnalytics(
+        MOCK_USER_ID,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch no-show analytics" });
+    }
+  });
+
+  // Mark meeting as no-show
+  app.post("/api/meetings/:id/no-show", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      
+      const updated = await storage.updateMeeting(parseInt(id), {
+        status: 'no_show',
+        noShowMarkedAt: new Date(),
+        noShowReason: reason || 'did_not_attend',
+        lastProcessed: new Date(),
+      });
+      
+      if (!updated) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark meeting as no-show" });
+    }
+  });
+
   // Get user settings
   app.get("/api/settings", async (req, res) => {
     try {

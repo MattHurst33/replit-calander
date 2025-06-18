@@ -41,6 +41,17 @@ export interface IStorage {
     qualified: number;
     disqualified: number;
     needsReview: number;
+    noShow: number;
+    completed: number;
+  }>;
+
+  getNoShowAnalytics(userId: number, startDate?: Date, endDate?: Date): Promise<{
+    totalNoShows: number;
+    noShowRate: number;
+    noShowsByTimeSlot: Array<{ hour: number; count: number }>;
+    noShowsByIndustry: Array<{ industry: string; count: number }>;
+    noShowsByCompanySize: Array<{ sizeRange: string; count: number }>;
+    noShowsByRevenue: Array<{ revenueRange: string; count: number }>;
   }>;
 
   // Email report methods
@@ -195,6 +206,8 @@ export class DatabaseStorage implements IStorage {
     qualified: number;
     disqualified: number;
     needsReview: number;
+    noShow: number;
+    completed: number;
   }> {
     const conditions = [eq(meetings.userId, userId)];
     
@@ -215,6 +228,108 @@ export class DatabaseStorage implements IStorage {
       qualified: allMeetings.filter(m => m.status === 'qualified').length,
       disqualified: allMeetings.filter(m => m.status === 'disqualified').length,
       needsReview: allMeetings.filter(m => m.status === 'needs_review').length,
+      noShow: allMeetings.filter(m => m.status === 'no_show').length,
+      completed: allMeetings.filter(m => m.status === 'completed').length,
+    };
+  }
+
+  async getNoShowAnalytics(userId: number, startDate?: Date, endDate?: Date): Promise<{
+    totalNoShows: number;
+    noShowRate: number;
+    noShowsByTimeSlot: Array<{ hour: number; count: number }>;
+    noShowsByIndustry: Array<{ industry: string; count: number }>;
+    noShowsByCompanySize: Array<{ sizeRange: string; count: number }>;
+    noShowsByRevenue: Array<{ revenueRange: string; count: number }>;
+  }> {
+    const conditions = [eq(meetings.userId, userId)];
+    
+    if (startDate) {
+      conditions.push(gte(meetings.startTime, startDate));
+    }
+    if (endDate) {
+      conditions.push(lte(meetings.startTime, endDate));
+    }
+
+    const allMeetings = await db
+      .select()
+      .from(meetings)
+      .where(and(...conditions));
+
+    const noShowMeetings = allMeetings.filter(m => m.status === 'no_show');
+    const totalMeetings = allMeetings.filter(m => ['qualified', 'completed', 'no_show'].includes(m.status));
+    
+    const totalNoShows = noShowMeetings.length;
+    const noShowRate = totalMeetings.length > 0 ? (totalNoShows / totalMeetings.length) * 100 : 0;
+
+    // No-shows by time slot
+    const timeSlotCounts: Record<number, number> = {};
+    noShowMeetings.forEach(meeting => {
+      const hour = new Date(meeting.startTime).getHours();
+      timeSlotCounts[hour] = (timeSlotCounts[hour] || 0) + 1;
+    });
+    const noShowsByTimeSlot = Object.entries(timeSlotCounts).map(([hour, count]) => ({
+      hour: parseInt(hour),
+      count
+    }));
+
+    // No-shows by industry
+    const industryCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.industry) {
+        industryCounts[meeting.industry] = (industryCounts[meeting.industry] || 0) + 1;
+      }
+    });
+    const noShowsByIndustry = Object.entries(industryCounts).map(([industry, count]) => ({
+      industry,
+      count
+    }));
+
+    // No-shows by company size
+    const sizeCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.companySize) {
+        let sizeRange;
+        if (meeting.companySize < 10) sizeRange = '1-10';
+        else if (meeting.companySize < 50) sizeRange = '11-50';
+        else if (meeting.companySize < 200) sizeRange = '51-200';
+        else if (meeting.companySize < 1000) sizeRange = '201-1000';
+        else sizeRange = '1000+';
+        
+        sizeCounts[sizeRange] = (sizeCounts[sizeRange] || 0) + 1;
+      }
+    });
+    const noShowsByCompanySize = Object.entries(sizeCounts).map(([sizeRange, count]) => ({
+      sizeRange,
+      count
+    }));
+
+    // No-shows by revenue
+    const revenueCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.revenue) {
+        const revenue = Number(meeting.revenue);
+        let revenueRange;
+        if (revenue < 10000) revenueRange = '$0-$10K';
+        else if (revenue < 50000) revenueRange = '$10K-$50K';
+        else if (revenue < 100000) revenueRange = '$50K-$100K';
+        else if (revenue < 500000) revenueRange = '$100K-$500K';
+        else revenueRange = '$500K+';
+        
+        revenueCounts[revenueRange] = (revenueCounts[revenueRange] || 0) + 1;
+      }
+    });
+    const noShowsByRevenue = Object.entries(revenueCounts).map(([revenueRange, count]) => ({
+      revenueRange,
+      count
+    }));
+
+    return {
+      totalNoShows,
+      noShowRate: Math.round(noShowRate * 100) / 100,
+      noShowsByTimeSlot,
+      noShowsByIndustry,
+      noShowsByCompanySize,
+      noShowsByRevenue,
     };
   }
 
