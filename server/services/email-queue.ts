@@ -89,7 +89,7 @@ export class EmailQueueService {
       // Update job with error and increment retry count
       await storage.updateEmailJob(job.id, {
         status: job.retryCount >= 3 ? 'failed' : 'pending',
-        error: error.message,
+        errorMessage: String(error),
         retryCount: job.retryCount + 1,
       });
     }
