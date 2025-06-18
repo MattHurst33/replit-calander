@@ -294,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const meeting = await storage.updateMeeting(id, { 
         status: 'no_show',
         noShowReason: reason || 'did_not_attend',
-        noShowDate: new Date().toISOString()
+        noShowMarkedAt: new Date()
       });
       
       if (!meeting) {

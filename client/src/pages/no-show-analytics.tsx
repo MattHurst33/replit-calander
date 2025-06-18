@@ -110,7 +110,7 @@ export default function NoShowAnalytics() {
               <div>
                 <p className="text-sm font-medium text-slate-600">Peak No-Show Hour</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {analytics?.noShowsByTimeSlot.length > 0 
+                  {analytics?.noShowsByTimeSlot && analytics.noShowsByTimeSlot.length > 0 
                     ? formatTimeSlot(analytics.noShowsByTimeSlot.reduce((a, b) => a.count > b.count ? a : b).hour)
                     : 'N/A'
                   }
@@ -129,7 +129,7 @@ export default function NoShowAnalytics() {
               <div>
                 <p className="text-sm font-medium text-slate-600">Top No-Show Industry</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {analytics?.noShowsByIndustry.length > 0 
+                  {analytics?.noShowsByIndustry && analytics.noShowsByIndustry.length > 0 
                     ? analytics.noShowsByIndustry.reduce((a, b) => a.count > b.count ? a : b).industry
                     : 'N/A'
                   }
@@ -257,7 +257,7 @@ export default function NoShowAnalytics() {
               </div>
             )}
 
-            {analytics?.noShowsByTimeSlot.length > 0 && (
+            {analytics?.noShowsByTimeSlot && analytics.noShowsByTimeSlot.length > 0 && (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">Time Slot Analysis</h4>
                 <p className="text-sm text-blue-800">
@@ -267,7 +267,7 @@ export default function NoShowAnalytics() {
               </div>
             )}
 
-            {analytics?.noShowsByIndustry.length > 0 && (
+            {analytics?.noShowsByIndustry && analytics.noShowsByIndustry.length > 0 && (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <h4 className="font-medium text-yellow-900 mb-2">Industry Patterns</h4>
                 <p className="text-sm text-yellow-800">
