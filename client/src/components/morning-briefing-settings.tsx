@@ -27,24 +27,15 @@ export default function MorningBriefingSettings() {
   const [showPreview, setShowPreview] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
-    queryKey: ['/api/settings/morning-briefing'],
-    initialData: {
-      enabled: true,
-      sendTime: "08:00",
-      emailEnabled: true,
-      includeRevenue: true,
-      includeIndustry: true,
-      includeContactInfo: true,
-      includeObjections: true,
-      includePainPoints: true,
-      includeCurrentSolutions: true
-    }
+    queryKey: ['/api/settings/morning-briefing']
   });
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (newSettings: Partial<MorningBriefingSettings>) => {
-      // For now, just simulate saving
-      return Promise.resolve(newSettings);
+    mutationFn: async (newSettings: Partial<MorningBriefingSettings>) => {
+      return await apiRequest('/api/settings/morning-briefing', {
+        method: 'PATCH',
+        body: newSettings
+      });
     },
     onSuccess: () => {
       toast({
@@ -53,10 +44,10 @@ export default function MorningBriefingSettings() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/settings/morning-briefing'] });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to save settings",
+        description: error.message || "Failed to save settings",
         variant: "destructive",
       });
     },
@@ -105,11 +96,11 @@ export default function MorningBriefingSettings() {
               </div>
             </div>
             <Switch
-              checked={settings?.enabled}
+              checked={Boolean(settings?.enabled ?? false)}
               onCheckedChange={(enabled) => {
-                const newSettings = { ...settings, enabled };
-                updateSettingsMutation.mutate(newSettings);
+                updateSettingsMutation.mutate({ enabled });
               }}
+              disabled={updateSettingsMutation.isPending}
             />
           </div>
 
@@ -124,9 +115,9 @@ export default function MorningBriefingSettings() {
                     type="time"
                     value={settings?.sendTime || "08:00"}
                     onChange={(e) => {
-                      const newSettings = { ...settings, sendTime: e.target.value };
-                      updateSettingsMutation.mutate(newSettings);
+                      updateSettingsMutation.mutate({ sendTime: e.target.value });
                     }}
+                    disabled={updateSettingsMutation.isPending}
                     className="w-full"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -161,11 +152,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Revenue</Label>
                     </div>
                     <Switch
-                      checked={settings?.includeRevenue}
+                      checked={Boolean(settings?.includeRevenue ?? false)}
                       onCheckedChange={(includeRevenue) => {
-                        const newSettings = { ...settings, includeRevenue };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includeRevenue });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
 
@@ -175,11 +166,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Industry</Label>
                     </div>
                     <Switch
-                      checked={settings?.includeIndustry}
+                      checked={Boolean(settings?.includeIndustry ?? false)}
                       onCheckedChange={(includeIndustry) => {
-                        const newSettings = { ...settings, includeIndustry };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includeIndustry });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
 
@@ -189,11 +180,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Contact Info</Label>
                     </div>
                     <Switch
-                      checked={settings?.includeContactInfo}
+                      checked={Boolean(settings?.includeContactInfo ?? false)}
                       onCheckedChange={(includeContactInfo) => {
-                        const newSettings = { ...settings, includeContactInfo };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includeContactInfo });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
 
@@ -203,11 +194,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Pain Points</Label>
                     </div>
                     <Switch
-                      checked={settings?.includePainPoints}
+                      checked={Boolean(settings?.includePainPoints ?? false)}
                       onCheckedChange={(includePainPoints) => {
-                        const newSettings = { ...settings, includePainPoints };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includePainPoints });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
 
@@ -217,11 +208,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Objections</Label>
                     </div>
                     <Switch
-                      checked={settings?.includeObjections}
+                      checked={Boolean(settings?.includeObjections ?? false)}
                       onCheckedChange={(includeObjections) => {
-                        const newSettings = { ...settings, includeObjections };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includeObjections });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
 
@@ -231,11 +222,11 @@ export default function MorningBriefingSettings() {
                       <Label className="text-sm">Current Solutions</Label>
                     </div>
                     <Switch
-                      checked={settings?.includeCurrentSolutions}
+                      checked={Boolean(settings?.includeCurrentSolutions ?? false)}
                       onCheckedChange={(includeCurrentSolutions) => {
-                        const newSettings = { ...settings, includeCurrentSolutions };
-                        updateSettingsMutation.mutate(newSettings);
+                        updateSettingsMutation.mutate({ includeCurrentSolutions });
                       }}
+                      disabled={updateSettingsMutation.isPending}
                     />
                   </div>
                 </div>
