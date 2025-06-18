@@ -33,8 +33,10 @@ export default function MorningBriefingSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<MorningBriefingSettings>) => {
-      const response = await apiRequest('PATCH', '/api/settings/morning-briefing', newSettings);
-      return response.json();
+      return await apiRequest('/api/settings/morning-briefing', {
+        method: 'PATCH',
+        body: JSON.stringify(newSettings)
+      });
     },
     onSuccess: () => {
       toast({
