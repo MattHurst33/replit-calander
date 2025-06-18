@@ -14,7 +14,7 @@ export const users = pgTable("users", {
 export const integrations = pgTable("integrations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  type: text("type").notNull(), // 'google_calendar', 'calendly'
+  type: text("type").notNull(), // 'google_calendar', 'calendly', 'gmail'
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
   settings: jsonb("settings").$type<Record<string, any>>(),
@@ -68,12 +68,26 @@ export const emailReports = pgTable("email_reports", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const emailJobs = pgTable("email_jobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  meetingId: integer("meeting_id").notNull().references(() => meetings.id),
+  type: text("type").notNull(), // 'confirmation', 'reminder', 'followup'
+  status: text("status").notNull().default('pending'), // 'pending', 'sent', 'failed'
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  sentAt: timestamp("sent_at"),
+  retryCount: integer("retry_count").default(0).notNull(),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   integrations: many(integrations),
   qualificationRules: many(qualificationRules),
   meetings: many(meetings),
   emailReports: many(emailReports),
+  emailJobs: many(emailJobs),
 }));
 
 export const integrationsRelations = relations(integrations, ({ one }) => ({
@@ -104,6 +118,17 @@ export const emailReportsRelations = relations(emailReports, ({ one }) => ({
   }),
 }));
 
+export const emailJobsRelations = relations(emailJobs, ({ one }) => ({
+  user: one(users, {
+    fields: [emailJobs.userId],
+    references: [users.id],
+  }),
+  meeting: one(meetings, {
+    fields: [emailJobs.meetingId],
+    references: [meetings.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -130,6 +155,11 @@ export const insertEmailReportSchema = createInsertSchema(emailReports).omit({
   createdAt: true,
 });
 
+export const insertEmailJobSchema = createInsertSchema(emailJobs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -145,3 +175,6 @@ export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 
 export type EmailReport = typeof emailReports.$inferSelect;
 export type InsertEmailReport = z.infer<typeof insertEmailReportSchema>;
+
+export type EmailJob = typeof emailJobs.$inferSelect;
+export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;

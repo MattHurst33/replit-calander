@@ -1,10 +1,11 @@
 import { 
-  users, integrations, qualificationRules, meetings, emailReports,
+  users, integrations, qualificationRules, meetings, emailReports, emailJobs,
   type User, type InsertUser,
   type Integration, type InsertIntegration,
   type QualificationRule, type InsertQualificationRule,
   type Meeting, type InsertMeeting,
-  type EmailReport, type InsertEmailReport
+  type EmailReport, type InsertEmailReport,
+  type EmailJob, type InsertEmailJob
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
