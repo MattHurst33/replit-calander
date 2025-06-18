@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, RefreshCw, Calendar, AlertCircle } from "lucide-react";
+import { ExternalLink, RefreshCw, Calendar, AlertCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CalendarIntegration() {
@@ -145,6 +145,91 @@ export default function CalendarIntegration() {
                     <li>• Automatically qualify meetings based on your rules</li>
                     <li>• Color-code events: Green (qualified), Red (disqualified), Yellow (needs review)</li>
                     <li>• Sync happens automatically every 15 minutes</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Gmail Integration */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <Mail className="text-red-600" size={20} />
+                </div>
+                <div>
+                  <CardTitle>Gmail Integration</CardTitle>
+                  <p className="text-sm text-slate-600">Send automated confirmation emails to qualified appointments</p>
+                </div>
+              </div>
+              <Badge variant={stats?.integrations?.gmail ? "default" : "secondary"}>
+                {stats?.integrations?.gmail ? "Connected" : "Not Connected"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {stats?.integrations?.gmail ? (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Gmail integration active - automated emails enabled</span>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-slate-900 mb-2">Email Automation Features</h4>
+                  <ul className="text-sm text-slate-600 space-y-1">
+                    <li>• Automatic confirmation emails for qualified meetings</li>
+                    <li>• 24-hour reminder emails</li>
+                    <li>• Post-meeting follow-up emails</li>
+                    <li>• Professional branded email templates</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 text-sm text-slate-600">
+                  <AlertCircle size={16} />
+                  <span>Connect Gmail to send automated emails to qualified appointments</span>
+                </div>
+
+                <Button 
+                  onClick={async () => {
+                    try {
+                      setIsConnecting(true);
+                      const response = await fetch('/api/auth/gmail');
+                      const { authUrl } = await response.json();
+                      window.open(authUrl, '_blank', 'width=500,height=600');
+                    } catch (error) {
+                      toast({
+                        title: "Connection Failed",
+                        description: "Failed to connect to Gmail. Please try again.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsConnecting(false);
+                    }
+                  }}
+                  disabled={isConnecting}
+                  className="bg-brand-500 hover:bg-brand-600"
+                >
+                  {isConnecting ? (
+                    <RefreshCw className="mr-2 animate-spin" size={16} />
+                  ) : (
+                    <ExternalLink className="mr-2" size={16} />
+                  )}
+                  Connect Gmail
+                </Button>
+
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-red-900 mb-2">Why connect Gmail?</h4>
+                  <ul className="text-sm text-red-800 space-y-1">
+                    <li>• Automatically send confirmation emails to qualified prospects</li>
+                    <li>• Increase meeting attendance with professional reminders</li>
+                    <li>• Follow up automatically after meetings to maintain momentum</li>
+                    <li>• All emails are branded and customizable</li>
                   </ul>
                 </div>
               </div>

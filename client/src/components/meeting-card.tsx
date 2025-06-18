@@ -1,6 +1,8 @@
-import { ExternalLink, MoreHorizontal, Eye, EyeOff } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import type { Meeting } from "@shared/schema";
 
 interface MeetingCardProps {

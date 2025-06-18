@@ -6,12 +6,14 @@ import { GoogleCalendarService } from "./services/google-calendar";
 import { CalendlyService } from "./services/calendly";
 import { QualificationEngine } from "./services/qualification-engine";
 import { EmailService } from "./services/email-service";
+import { GmailService } from "./services/gmail-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const googleCalendar = new GoogleCalendarService();
   const calendly = new CalendlyService();
   const qualificationEngine = new QualificationEngine(storage);
   const emailService = new EmailService();
+  const gmailService = new GmailService();
 
   // Mock user for now - in real app this would come from authentication
   const MOCK_USER_ID = 1;
@@ -27,6 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         integrations: {
           googleCalendar: integrations.find(i => i.type === 'google_calendar')?.isActive || false,
           calendly: integrations.find(i => i.type === 'calendly')?.isActive || false,
+          gmail: integrations.find(i => i.type === 'gmail')?.isActive || false,
         }
       });
     } catch (error) {
@@ -230,6 +233,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to qualify meeting" });
+    }
+  });
+
+  // Gmail OAuth
+  app.get("/api/auth/gmail", (req, res) => {
+    const authUrl = gmailService.getAuthUrl();
+    res.json({ authUrl });
+  });
+
+  app.post("/api/auth/gmail/callback", async (req, res) => {
+    try {
+      const { code } = req.body;
+      const tokens = await gmailService.getTokensFromCode(code);
+      
+      // Store integration
+      await storage.createIntegration({
+        userId: MOCK_USER_ID,
+        type: 'gmail',
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        settings: {},
+        isActive: true,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to authenticate with Gmail" });
+    }
+  });
+
+  // Send confirmation email to qualified meetings
+  app.post("/api/meetings/:id/send-confirmation", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meeting = meetings.find(m => m.id === parseInt(id));
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+
+      if (meeting.status !== 'qualified') {
+        return res.status(400).json({ message: "Can only send confirmations to qualified meetings" });
+      }
+
+      const gmailIntegration = await storage.getIntegration(MOCK_USER_ID, 'gmail');
+      
+      if (!gmailIntegration || !gmailIntegration.accessToken) {
+        return res.status(400).json({ message: "Gmail not connected" });
+      }
+
+      // Send confirmation email
+      await gmailService.sendConfirmationEmail(gmailIntegration.accessToken, meeting);
+
+      // Create email job record
+      await storage.createEmailJob({
+        userId: MOCK_USER_ID,
+        meetingId: meeting.id,
+        type: 'confirmation',
+        status: 'sent',
+        scheduledAt: new Date(),
+        sentAt: new Date(),
+        retryCount: 0,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to send confirmation email" });
+    }
+  });
+
+  // Get email jobs for a user
+  app.get("/api/email-jobs", async (req, res) => {
+    try {
+      const jobs = await storage.getUserEmailJobs(MOCK_USER_ID);
+      res.json(jobs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch email jobs" });
     }
   });
 

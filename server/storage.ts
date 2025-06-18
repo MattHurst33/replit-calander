@@ -44,6 +44,12 @@ export interface IStorage {
   // Email report methods
   createEmailReport(report: InsertEmailReport): Promise<EmailReport>;
   getUserEmailReports(userId: number): Promise<EmailReport[]>;
+
+  // Email job methods
+  createEmailJob(job: InsertEmailJob): Promise<EmailJob>;
+  getUserEmailJobs(userId: number): Promise<EmailJob[]>;
+  getPendingEmailJobs(): Promise<EmailJob[]>;
+  updateEmailJob(id: number, updates: Partial<InsertEmailJob>): Promise<EmailJob | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -210,6 +216,42 @@ export class DatabaseStorage implements IStorage {
       .from(emailReports)
       .where(eq(emailReports.userId, userId))
       .orderBy(desc(emailReports.reportDate));
+  }
+
+  async createEmailJob(job: InsertEmailJob): Promise<EmailJob> {
+    const [newJob] = await db
+      .insert(emailJobs)
+      .values(job)
+      .returning();
+    return newJob;
+  }
+
+  async getUserEmailJobs(userId: number): Promise<EmailJob[]> {
+    return await db
+      .select()
+      .from(emailJobs)
+      .where(eq(emailJobs.userId, userId))
+      .orderBy(desc(emailJobs.createdAt));
+  }
+
+  async getPendingEmailJobs(): Promise<EmailJob[]> {
+    return await db
+      .select()
+      .from(emailJobs)
+      .where(and(
+        eq(emailJobs.status, 'pending'),
+        lte(emailJobs.scheduledAt, new Date())
+      ))
+      .orderBy(emailJobs.scheduledAt);
+  }
+
+  async updateEmailJob(id: number, updates: Partial<InsertEmailJob>): Promise<EmailJob | undefined> {
+    const [updated] = await db
+      .update(emailJobs)
+      .set(updates)
+      .where(eq(emailJobs.id, id))
+      .returning();
+    return updated || undefined;
   }
 }
 
