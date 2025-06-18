@@ -29,7 +29,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import PreMeetingSettings from "@/components/pre-meeting-settings";
+import MorningBriefingSettings from "@/components/morning-briefing-settings";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -609,7 +609,7 @@ export default function Settings() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <PreMeetingSettings />
+                <MorningBriefingSettings />
               </CardContent>
             </Card>
           </TabsContent>

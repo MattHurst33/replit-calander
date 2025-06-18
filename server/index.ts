@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { emailQueue } from "./services/email-queue";
-import { morningBriefingService } from "./services/pre-meeting-summary";
+import { morningBriefingService } from "./services/morning-briefing";
 
 const app = express();
 app.use(express.json());
@@ -71,6 +71,6 @@ app.use((req, res, next) => {
     
     // Start background services
     emailQueue.startProcessing();
-    preMeetingSummaryService.startScheduler();
+    morningBriefingService.startScheduler();
   });
 })();

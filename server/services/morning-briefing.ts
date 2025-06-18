@@ -50,8 +50,6 @@ export class MorningBriefingService {
         meetings.map(meeting => this.generateProspectSummary(meeting))
       );
       
-      const emailContent = this.generateMorningBriefingEmail(meetings, summaries);
-      
       // Get user email (in production, this would come from authenticated user)
       const user = await storage.getUser(meetings[0].userId);
       if (!user?.email) return;
@@ -62,7 +60,7 @@ export class MorningBriefingService {
       
       if (gmailIntegration?.accessToken) {
         // Send via Gmail API
-        await this.sendBriefingViaGmail(gmailIntegration.accessToken, user.email, emailContent);
+        await this.sendBriefingViaGmail(gmailIntegration.accessToken, user.email, meetings, summaries);
       } else {
         // Send via SMTP
         // Fallback to basic email (skip SMTP for now)
@@ -125,129 +123,83 @@ export class MorningBriefingService {
       }
     }
     
-    return revenue.toString();
+    return String(revenue);
   }
 
   private extractPainPoints(formData: Record<string, any>): string[] {
-    const painPoints: string[] = [];
+    const painPoints = [];
     
-    // Common form fields that indicate pain points
-    const painPointFields = [
-      'current_challenges',
-      'biggest_problem',
-      'pain_points',
-      'issues',
-      'frustrations',
-      'problems'
-    ];
-
-    painPointFields.forEach(field => {
-      if (formData[field]) {
-        painPoints.push(formData[field]);
-      }
-    });
-
-    // If no explicit pain points, infer from other fields
-    if (painPoints.length === 0) {
-      if (formData.budget && formData.budget.toLowerCase().includes('tight')) {
-        painPoints.push("Budget constraints");
-      }
-      if (formData.timeline && formData.timeline.toLowerCase().includes('urgent')) {
-        painPoints.push("Time-sensitive requirements");
-      }
-      if (formData.current_solution && formData.current_solution.toLowerCase().includes('manual')) {
-        painPoints.push("Manual processes inefficiency");
-      }
-    }
-
-    return painPoints.length > 0 ? painPoints : ["Not specified in form"];
+    // Look for common pain point fields
+    if (formData.challenges) painPoints.push(formData.challenges);
+    if (formData.problems) painPoints.push(formData.problems);
+    if (formData.pain_points) painPoints.push(formData.pain_points);
+    if (formData.biggest_challenge) painPoints.push(formData.biggest_challenge);
+    
+    // Look for specific business challenges
+    if (formData.growth_challenges) painPoints.push("Growth challenges: " + formData.growth_challenges);
+    if (formData.efficiency_issues) painPoints.push("Efficiency issues: " + formData.efficiency_issues);
+    if (formData.cost_concerns) painPoints.push("Cost concerns: " + formData.cost_concerns);
+    
+    return painPoints.filter(Boolean).slice(0, 3); // Limit to top 3
   }
 
   private generateLikelyObjections(industry: string, revenue: string, formData: Record<string, any>): string[] {
-    const objections: string[] = [];
-
+    const objections = [];
+    
     // Budget-based objections
-    if (revenue.includes('K') || revenue === "Not specified") {
-      objections.push("Budget/pricing concerns");
-      objections.push("Need to justify ROI");
+    if (revenue.includes('K') || revenue === 'Not specified') {
+      objections.push("Budget constraints");
     }
-
+    
     // Industry-specific objections
     switch (industry.toLowerCase()) {
       case 'healthcare':
-        objections.push("HIPAA compliance requirements");
-        objections.push("Integration with existing EHR systems");
+        objections.push("Compliance concerns", "HIPAA requirements");
         break;
       case 'finance':
-        objections.push("Security and compliance concerns");
-        objections.push("Regulatory approval process");
+        objections.push("Regulatory compliance", "Security requirements");
         break;
-      case 'technology':
-        objections.push("Technical integration complexity");
-        objections.push("Scalability concerns");
+      case 'education':
+        objections.push("Limited budget", "Approval process complexity");
         break;
       default:
-        objections.push("Implementation timeline concerns");
-        objections.push("Change management challenges");
+        objections.push("Need to consult with team", "Timing concerns");
     }
-
-    // Form-based objections
-    if (formData.decision_timeline && formData.decision_timeline.includes('months')) {
-      objections.push("Extended decision-making process");
+    
+    // Timeline objections
+    if (formData.urgency && formData.urgency.toLowerCase().includes('low')) {
+      objections.push("Not urgent priority");
     }
-
-    if (formData.decision_makers && formData.decision_makers.includes('committee')) {
-      objections.push("Multiple stakeholder approval needed");
-    }
-
-    return objections;
+    
+    return objections.slice(0, 3); // Limit to top 3
   }
 
   private extractCurrentSolutions(formData: Record<string, any>): string[] {
-    const solutions: string[] = [];
+    const solutions = [];
     
-    const solutionFields = [
-      'current_solution',
-      'current_tools',
-      'existing_software',
-      'current_process',
-      'how_currently_handled'
-    ];
-
-    solutionFields.forEach(field => {
-      if (formData[field]) {
-        solutions.push(formData[field]);
-      }
-    });
-
-    return solutions.length > 0 ? solutions : ["Not specified"];
+    if (formData.current_solution) solutions.push(formData.current_solution);
+    if (formData.existing_tools) solutions.push(formData.existing_tools);
+    if (formData.current_vendor) solutions.push("Using " + formData.current_vendor);
+    if (formData.software) solutions.push(formData.software);
+    
+    return solutions.filter(Boolean).slice(0, 3); // Limit to top 3
   }
 
   private extractLookingFor(formData: Record<string, any>, industry: string): string[] {
-    const lookingFor: string[] = [];
+    const lookingFor = [];
     
-    const goalFields = [
-      'goals',
-      'objectives',
-      'looking_for',
-      'desired_outcome',
-      'what_want_to_achieve'
-    ];
-
-    goalFields.forEach(field => {
-      if (formData[field]) {
-        lookingFor.push(formData[field]);
-      }
-    });
-
-    // Industry-specific defaults if not specified
+    if (formData.goals) lookingFor.push(formData.goals);
+    if (formData.objectives) lookingFor.push(formData.objectives);
+    if (formData.desired_outcome) lookingFor.push(formData.desired_outcome);
+    
+    // Industry-specific expectations
     if (lookingFor.length === 0) {
       switch (industry.toLowerCase()) {
         case 'technology':
-          lookingFor.push("Scalable solutions", "Technical integration");
+          lookingFor.push("Scalability", "Innovation");
           break;
         case 'healthcare':
-          lookingFor.push("Compliant solutions", "Patient data security");
+          lookingFor.push("Patient care improvement", "Compliance support");
           break;
         case 'finance':
           lookingFor.push("Regulatory compliance", "Risk management");
@@ -257,7 +209,7 @@ export class MorningBriefingService {
       }
     }
 
-    return lookingFor;
+    return lookingFor.slice(0, 3); // Limit to top 3
   }
 
   private generateMeetingContext(meeting: Meeting, formData: Record<string, any>): string {
@@ -289,6 +241,40 @@ export class MorningBriefingService {
     return context.join(" | ");
   }
 
+  private async sendBriefingViaGmail(accessToken: string, userEmail: string, meetings: Meeting[], summaries: ProspectSummary[]) {
+    const today = new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    const subject = `Morning Briefing - ${today}`;
+    const emailContent = this.generateMorningBriefingEmail(meetings, summaries);
+    const rawEmail = this.createRawEmail(userEmail, subject, emailContent);
+
+    try {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raw: rawEmail
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gmail API error: ${response.statusText}`);
+      }
+
+      console.log('Morning briefing sent via Gmail successfully');
+    } catch (error) {
+      console.error('Error sending morning briefing via Gmail:', error);
+      throw error;
+    }
+  }
+
   private generateMorningBriefingEmail(meetings: Meeting[], summaries: ProspectSummary[]): string {
     const today = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
@@ -308,7 +294,7 @@ export class MorningBriefingService {
 
       return `
         <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white;">
-          <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h3 style="margin: 0; color: #1f2937; font-size: 18px;">${timeString} - ${summary.name}</h3>
             <span style="background: ${meeting.status === 'qualified' ? '#10b981' : '#f59e0b'}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
               ${meeting.status === 'qualified' ? 'Qualified' : 'Needs Review'}
@@ -368,7 +354,7 @@ export class MorningBriefingService {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
   
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 30px;">
-    <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Good Morning! 🌅</h1>
+    <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Good Morning!</h1>
     <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Your briefing for ${today}</p>
     <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; margin-top: 20px;">
       <div style="font-size: 24px; font-weight: bold;">${meetings.length}</div>
@@ -402,149 +388,6 @@ export class MorningBriefingService {
     `;
   }
 
-  private generateSummaryEmail(summary: ProspectSummary, meeting: Meeting): string {
-    const startTime = new Date(meeting.startTime);
-    const timeString = startTime.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
-
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Pre-Meeting Summary</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .section { background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 6px; border-left: 4px solid #667eea; }
-        .highlight { background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0; }
-        .urgent { background: #ffebee; border-left-color: #f44336; }
-        ul { padding-left: 20px; }
-        li { margin: 5px 0; }
-        .meeting-info { background: #e8f5e8; border-left-color: #4caf50; }
-        .context { font-size: 14px; color: #666; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🎯 Pre-Meeting Summary</h1>
-        <p><strong>Meeting in 2 minutes at ${timeString}</strong></p>
-        <p class="context">${summary.meetingContext}</p>
-    </div>
-
-    <div class="section meeting-info">
-        <h2>👤 Prospect Overview</h2>
-        <p><strong>Name:</strong> ${summary.name}</p>
-        <p><strong>Company:</strong> ${summary.company}</p>
-        <p><strong>Industry:</strong> ${summary.industry}</p>
-        <p><strong>Revenue:</strong> ${summary.revenue}</p>
-    </div>
-
-    <div class="section">
-        <h2>😰 Pain Points</h2>
-        <ul>
-            ${summary.painPoints.map(point => `<li>${point}</li>`).join('')}
-        </ul>
-    </div>
-
-    <div class="section urgent">
-        <h2>🚧 Likely Objections</h2>
-        <ul>
-            ${summary.likelyObjections.map(objection => `<li>${objection}</li>`).join('')}
-        </ul>
-    </div>
-
-    <div class="section">
-        <h2>🔧 Current Solutions</h2>
-        <ul>
-            ${summary.currentSolutions.map(solution => `<li>${solution}</li>`).join('')}
-        </ul>
-    </div>
-
-    <div class="section">
-        <h2>🎯 What They're Looking For</h2>
-        <ul>
-            ${summary.lookingFor.map(goal => `<li>${goal}</li>`).join('')}
-        </ul>
-    </div>
-
-    <div class="highlight">
-        <h3>💡 Quick Tips for This Call</h3>
-        <ul>
-            <li>Address their top pain point: <strong>${summary.painPoints[0]}</strong></li>
-            <li>Be ready for: <strong>${summary.likelyObjections[0]}</strong></li>
-            <li>Focus on their goal: <strong>${summary.lookingFor[0]}</strong></li>
-            <li>Ask about their current: <strong>${summary.currentSolutions[0]}</strong></li>
-        </ul>
-    </div>
-
-    <div class="section">
-        <p><em>Meeting: ${meeting.title}</em></p>
-        <p><em>Generated automatically 2 minutes before your call</em></p>
-    </div>
-</body>
-</html>
-    `.trim();
-  }
-
-  private async sendBriefingViaGmail(accessToken: string, userEmail: string, emailContent: string) {
-    const today = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    
-    const subject = `Morning Briefing - ${today}`;
-    const rawEmail = this.createRawEmail(userEmail, subject, emailContent);
-
-    try {
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          raw: rawEmail
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gmail API error: ${response.statusText}`);
-      }
-
-      console.log('Morning briefing sent via Gmail successfully');
-    } catch (error) {
-      console.error('Error sending morning briefing via Gmail:', error);
-      throw error;
-    }
-  }
-
-  private async sendViaGmail(accessToken: string, userEmail: string, emailContent: string, meeting: Meeting) {
-    const startTime = new Date(meeting.startTime);
-    const subject = `🎯 Pre-Meeting Summary: ${meeting.attendeeName || 'Prospect'} (${startTime.toLocaleTimeString()})`;
-    
-    const rawEmail = this.createRawEmail(userEmail, subject, emailContent);
-    
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        raw: rawEmail
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gmail API error: ${response.statusText}`);
-    }
-  }
-
   private createRawEmail(to: string, subject: string, htmlContent: string): string {
     const email = [
       `To: ${to}`,
@@ -573,3 +416,5 @@ export class MorningBriefingService {
     console.log('Morning briefing scheduler started');
   }
 }
+
+export const morningBriefingService = new MorningBriefingService();
