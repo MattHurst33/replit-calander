@@ -53,11 +53,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status, qualificationReason } = req.body;
       
+      // Get meeting details before updating
+      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meeting = meetings.find(m => m.id === parseInt(id));
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
       const updated = await storage.updateMeeting(parseInt(id), {
         status,
         qualificationReason,
         lastProcessed: new Date(),
       });
+      
+      // If meeting is being disqualified, free up the Google Calendar slot
+      if (status === 'disqualified' && meeting.externalId) {
+        try {
+          const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
+          
+          if (googleCalendarIntegration && googleCalendarIntegration.accessToken) {
+            let eventId = meeting.externalId;
+            
+            // Skip Calendly events as they manage their own calendar
+            if (!eventId.startsWith('calendly_')) {
+              // Remove prefix for Google Calendar events
+              if (eventId.startsWith('gcal_')) {
+                eventId = eventId.replace('gcal_', '');
+              }
+              
+              await googleCalendar.markEventAsFree(googleCalendarIntegration.accessToken, eventId);
+              console.log(`Freed calendar slot for disqualified meeting: ${eventId}`);
+            }
+          }
+        } catch (calendarError) {
+          console.error('Failed to free calendar slot:', calendarError);
+          // Don't fail the status update if calendar update fails
+        }
+      }
       
       if (!updated) {
         return res.status(404).json({ message: "Meeting not found" });
@@ -311,6 +344,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(jobs);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch email jobs" });
+    }
+  });
+
+  // Free calendar slot for disqualified meeting
+  app.post("/api/meetings/:id/free-calendar-slot", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meeting = meetings.find(m => m.id === parseInt(id));
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+
+      if (!meeting.externalId) {
+        return res.status(400).json({ message: "Meeting has no external calendar ID" });
+      }
+
+      const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
+      
+      if (!googleCalendarIntegration || !googleCalendarIntegration.accessToken) {
+        return res.status(400).json({ message: "Google Calendar not connected" });
+      }
+
+      let eventId = meeting.externalId;
+      
+      // Skip Calendly events as they manage their own calendar
+      if (eventId.startsWith('calendly_')) {
+        return res.status(400).json({ message: "Cannot free Calendly managed events" });
+      }
+
+      // Remove prefix for Google Calendar events
+      if (eventId.startsWith('gcal_')) {
+        eventId = eventId.replace('gcal_', '');
+      }
+      
+      await googleCalendar.markEventAsFree(googleCalendarIntegration.accessToken, eventId);
+      
+      // Update meeting status to disqualified if not already
+      if (meeting.status !== 'disqualified') {
+        await storage.updateMeeting(parseInt(id), {
+          status: 'disqualified',
+          qualificationReason: 'Calendar slot freed manually',
+          lastProcessed: new Date(),
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Calendar slot freed for meeting: ${meeting.title}`,
+        eventId: eventId
+      });
+    } catch (error) {
+      console.error('Failed to free calendar slot:', error);
+      res.status(500).json({ message: "Failed to free calendar slot" });
     }
   });
 

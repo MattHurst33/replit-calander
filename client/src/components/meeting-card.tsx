@@ -1,4 +1,4 @@
-import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle, RefreshCw } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle, RefreshCw, CalendarX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ interface MeetingCardProps {
 export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
   const { toast } = useToast();
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isFreeingSlot, setIsFreeingSlot] = useState(false);
 
   const sendConfirmationEmail = async () => {
     try {
@@ -42,6 +43,42 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
       });
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const freeCalendarSlot = async () => {
+    try {
+      setIsFreeingSlot(true);
+      const response = await fetch(`/api/meetings/${meeting.id}/free-calendar-slot`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Calendar Slot Freed",
+          description: result.message,
+        });
+        // Trigger a refresh of the meeting data
+        if (onUpdate) {
+          onUpdate(meeting.id, 'disqualified');
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Failed to Free Slot",
+          description: error.message || "Failed to free calendar slot.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network Error",
+        description: "Failed to connect to server.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFreeingSlot(false);
     }
   };
 
@@ -132,11 +169,28 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
             onClick={sendConfirmationEmail}
             disabled={isSendingEmail}
             className="text-green-600 hover:text-green-700 hover:bg-green-50"
+            title="Send confirmation email"
           >
             {isSendingEmail ? (
               <RefreshCw className="animate-spin" size={16} />
             ) : (
               <Mail size={16} />
+            )}
+          </Button>
+        )}
+        {meeting.externalId && !meeting.externalId.startsWith('calendly_') && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={freeCalendarSlot}
+            disabled={isFreeingSlot}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Free calendar slot"
+          >
+            {isFreeingSlot ? (
+              <RefreshCw className="animate-spin" size={16} />
+            ) : (
+              <CalendarX size={16} />
             )}
           </Button>
         )}
