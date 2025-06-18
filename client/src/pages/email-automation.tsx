@@ -329,14 +329,14 @@ Best regards,
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium mb-2">Available Variables:</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                  <div>• {{prospect_name}}</div>
-                  <div>• {{company_name}}</div>
-                  <div>• {{meeting_date}}</div>
-                  <div>• {{meeting_time}}</div>
-                  <div>• {{meeting_link}}</div>
-                  <div>• {{your_name}}</div>
-                  <div>• {{pain_point_1}}</div>
-                  <div>• {{pain_point_2}}</div>
+                  <div>• {"{{prospect_name}}"}</div>
+                  <div>• {"{{company_name}}"}</div>
+                  <div>• {"{{meeting_date}}"}</div>
+                  <div>• {"{{meeting_time}}"}</div>
+                  <div>• {"{{meeting_link}}"}</div>
+                  <div>• {"{{your_name}}"}</div>
+                  <div>• {"{{pain_point_1}}"}</div>
+                  <div>• {"{{pain_point_2}}"}</div>
                 </div>
               </div>
 
