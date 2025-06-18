@@ -9,6 +9,7 @@ import CalendarIntegration from "@/pages/calendar-integration";
 import QualificationRules from "@/pages/qualification-rules";
 import Analytics from "@/pages/analytics";
 import EmailReports from "@/pages/email-reports";
+import EmailAutomation from "@/pages/email-automation";
 import Settings from "@/pages/settings";
 import Sidebar from "@/components/sidebar";
 
@@ -23,6 +24,7 @@ function Router() {
           <Route path="/qualification-rules" component={QualificationRules} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/email-reports" component={EmailReports} />
+          <Route path="/email-automation" component={EmailAutomation} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

@@ -75,13 +75,25 @@ export const emailJobs = pgTable("email_jobs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   meetingId: integer("meeting_id").notNull().references(() => meetings.id),
-  type: text("type").notNull(), // 'confirmation', 'reminder', 'followup'
+  type: text("type").notNull(), // 'confirmation', 'reminder', 'followup', 'qualified_appointment'
   status: text("status").notNull().default('pending'), // 'pending', 'sent', 'failed'
   scheduledAt: timestamp("scheduled_at").notNull(),
   sentAt: timestamp("sent_at"),
   retryCount: integer("retry_count").default(0).notNull(),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'qualified_appointment', 'follow_up', 'reminder'
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Relations
@@ -169,6 +181,12 @@ export const insertEmailReportSchema = createInsertSchema(emailReports).omit({
 export const insertEmailJobSchema = createInsertSchema(emailJobs).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 // Types

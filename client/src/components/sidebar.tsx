@@ -6,7 +6,8 @@ import {
   Mail, 
   Settings, 
   User,
-  TrendingUp
+  TrendingUp,
+  Send
 } from "lucide-react";
 
 const navigationItems = [
@@ -15,6 +16,7 @@ const navigationItems = [
   { path: "/qualification-rules", label: "Qualification Rules", icon: Filter },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
   { path: "/email-reports", label: "Email Reports", icon: Mail },
+  { path: "/email-automation", label: "Email Automation", icon: Send },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
