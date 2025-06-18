@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const updates = req.body;
-      const currentSettings = await storage.getUserSettings(MOCK_USER_ID) || {};
+      const currentSettings = await storage.getUserSettings(userId) || {};
       
       const newSettings = {
         ...currentSettings,
@@ -273,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authUrl });
   });
 
-  app.post("/api/auth/google/callback", async (req, res) => {
+  app.post("/api/auth/google/callback", isAuthenticated, async (req: any, res) => {
     try {
       const { code } = req.body;
       const tokens = await googleCalendar.getTokensFromCode(code);
@@ -405,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authUrl });
   });
 
-  app.post("/api/auth/gmail/callback", async (req, res) => {
+  app.post("/api/auth/gmail/callback", isAuthenticated, async (req: any, res) => {
     try {
       const { code } = req.body;
       const tokens = await gmailService.getTokensFromCode(code);
@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create email job record
       await storage.createEmailJob({
-        userId: MOCK_USER_ID,
+        userId,
         meetingId: meeting.id,
         type: 'confirmation',
         status: 'sent',
@@ -469,9 +469,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get email jobs for a user
-  app.get("/api/email-jobs", async (req, res) => {
+  app.get("/api/email-jobs", isAuthenticated, async (req: any, res) => {
     try {
-      const jobs = await storage.getUserEmailJobs(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const jobs = await storage.getUserEmailJobs(userId);
       res.json(jobs);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch email jobs" });
@@ -479,10 +480,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Free calendar slot for disqualified meeting
-  app.post("/api/meetings/:id/free-calendar-slot", async (req, res) => {
+  app.post("/api/meetings/:id/free-calendar-slot", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { id } = req.params;
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meetings = await storage.getUserMeetings(userId, 1000);
       const meeting = meetings.find(m => m.id === parseInt(id));
       
       if (!meeting) {
@@ -572,9 +574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user settings
-  app.get("/api/settings", async (req, res) => {
+  app.get("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
-      const settings = await storage.getUserSettings(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
       res.json(settings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user settings" });
@@ -582,10 +585,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user settings
-  app.patch("/api/settings", async (req, res) => {
+  app.patch("/api/settings", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const settings = req.body;
-      const updatedUser = await storage.updateUserSettings(MOCK_USER_ID, settings);
+      const updatedUser = await storage.updateUserSettings(userId, settings);
       
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
@@ -598,23 +602,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Send daily report
-  app.post("/api/reports/daily", async (req, res) => {
+  app.post("/api/reports/daily", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const today = new Date();
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
       
-      const stats = await storage.getMeetingStats(MOCK_USER_ID, yesterday, today);
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 50);
+      const stats = await storage.getMeetingStats(userId, yesterday, today);
+      const meetings = await storage.getUserMeetings(userId, 50);
       
-      const user = await storage.getUser(MOCK_USER_ID);
+      const user = await storage.getUser(userId);
       if (user?.email) {
         await emailService.sendDailyReport(user.email, stats, meetings);
       }
       
       // Store report record
       await storage.createEmailReport({
-        userId: MOCK_USER_ID,
+        userId,
         reportDate: today,
         totalMeetings: stats.total,
         qualifiedMeetings: stats.qualified,
