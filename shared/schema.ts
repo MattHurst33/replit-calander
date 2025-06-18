@@ -1,20 +1,36 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb, decimal, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table.
+// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
   settings: jsonb("settings").$type<Record<string, any>>().notNull().default({}),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const integrations = pgTable("integrations", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   type: text("type").notNull(), // 'google_calendar', 'calendly', 'gmail'
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
@@ -25,7 +41,7 @@ export const integrations = pgTable("integrations", {
 
 export const qualificationRules = pgTable("qualification_rules", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   field: text("field").notNull(), // 'revenue', 'company_size', 'industry', 'budget'
   operator: text("operator").notNull(), // 'gte', 'lte', 'eq', 'ne', 'contains', 'not_contains'
@@ -37,7 +53,7 @@ export const qualificationRules = pgTable("qualification_rules", {
 
 export const meetings = pgTable("meetings", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   externalId: text("external_id").notNull(), // Google Calendar event ID
   title: text("title").notNull(),
   description: text("description"),
@@ -61,7 +77,7 @@ export const meetings = pgTable("meetings", {
 
 export const emailReports = pgTable("email_reports", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   reportDate: timestamp("report_date").notNull(),
   totalMeetings: integer("total_meetings").notNull(),
   qualifiedMeetings: integer("qualified_meetings").notNull(),
@@ -153,6 +169,11 @@ export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
 }));
 
 // Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type UpsertUser = typeof users.$inferInsert;
 
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({
@@ -189,6 +210,7 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
