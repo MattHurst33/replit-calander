@@ -29,6 +29,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import PreMeetingSettings from "@/components/pre-meeting-settings";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -253,9 +254,10 @@ export default function Settings() {
 
       <div className="max-w-4xl mx-auto">
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
@@ -595,6 +597,21 @@ export default function Settings() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Automation Settings */}
+          <TabsContent value="automation">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <RefreshCw size={20} />
+                  <span>Meeting Automation</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PreMeetingSettings />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Notification Settings */}
