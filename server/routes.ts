@@ -7,22 +7,36 @@ import { CalendlyService } from "./services/calendly";
 import { QualificationEngine } from "./services/qualification-engine";
 import { EmailService } from "./services/email-service";
 import { GmailService } from "./services/gmail-service";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
+
   const googleCalendar = new GoogleCalendarService();
   const calendly = new CalendlyService();
   const qualificationEngine = new QualificationEngine(storage);
   const emailService = new EmailService();
   const gmailService = new GmailService();
 
-  // Mock user for now - in real app this would come from authentication
-  const MOCK_USER_ID = 1;
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
+  app.get("/api/dashboard/stats", isAuthenticated, async (req: any, res) => {
     try {
-      const stats = await storage.getMeetingStats(MOCK_USER_ID);
-      const integrations = await storage.getUserIntegrations(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const stats = await storage.getMeetingStats(userId);
+      const integrations = await storage.getUserIntegrations(userId);
       
       res.json({
         ...stats,
@@ -38,9 +52,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get no-show analytics
-  app.get("/api/analytics/no-shows", async (req, res) => {
+  app.get("/api/analytics/no-shows", isAuthenticated, async (req: any, res) => {
     try {
-      const analytics = await storage.getNoShowAnalytics(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const analytics = await storage.getNoShowAnalytics(userId);
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching no-show analytics:", error);

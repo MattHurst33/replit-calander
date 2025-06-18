@@ -22,9 +22,8 @@ import {
   type InsertEmailTemplate,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, count, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 
-// Interface for storage operations
 export interface IStorage {
   // User methods
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
@@ -116,26 +115,28 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
-  async updateUserSettings(userId: string, settings: Record<string, any>): Promise<User | undefined> {
-    const [user] = await db
+  async updateUserSettings(userId: number, settings: Record<string, any>): Promise<User | undefined> {
+    const [updated] = await db
       .update(users)
       .set({ settings })
       .where(eq(users.id, userId))
       .returning();
-    return user || undefined;
+    return updated || undefined;
   }
 
-  async getUserSettings(userId: string): Promise<Record<string, any> | undefined> {
+  async getUserSettings(userId: number): Promise<Record<string, any> | undefined> {
     const [user] = await db.select({ settings: users.settings }).from(users).where(eq(users.id, userId));
-    return user?.settings;
+    return user?.settings || {};
   }
 
-  // Integration methods
-  async getUserIntegrations(userId: string): Promise<Integration[]> {
-    return await db.select().from(integrations).where(eq(integrations.userId, userId));
+  async getUserIntegrations(userId: number): Promise<Integration[]> {
+    return await db
+      .select()
+      .from(integrations)
+      .where(eq(integrations.userId, userId));
   }
 
-  async getIntegration(userId: string, type: string): Promise<Integration | undefined> {
+  async getIntegration(userId: number, type: string): Promise<Integration | undefined> {
     const [integration] = await db
       .select()
       .from(integrations)
@@ -152,21 +153,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateIntegration(id: number, updates: Partial<InsertIntegration>): Promise<Integration | undefined> {
-    const [integration] = await db
+    const [updated] = await db
       .update(integrations)
       .set(updates)
       .where(eq(integrations.id, id))
       .returning();
-    return integration || undefined;
+    return updated || undefined;
   }
 
-  // Qualification rule methods
-  async getUserQualificationRules(userId: string): Promise<QualificationRule[]> {
+  async getUserQualificationRules(userId: number): Promise<QualificationRule[]> {
     return await db
       .select()
       .from(qualificationRules)
       .where(eq(qualificationRules.userId, userId))
-      .orderBy(qualificationRules.priority);
+      .orderBy(desc(qualificationRules.priority));
   }
 
   async createQualificationRule(rule: InsertQualificationRule): Promise<QualificationRule> {
@@ -178,28 +178,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateQualificationRule(id: number, updates: Partial<InsertQualificationRule>): Promise<QualificationRule | undefined> {
-    const [rule] = await db
+    const [updated] = await db
       .update(qualificationRules)
       .set(updates)
       .where(eq(qualificationRules.id, id))
       .returning();
-    return rule || undefined;
+    return updated || undefined;
   }
 
   async deleteQualificationRule(id: number): Promise<boolean> {
     const result = await db
       .delete(qualificationRules)
       .where(eq(qualificationRules.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
-  // Meeting methods
   async getUserMeetings(userId: string, limit = 50): Promise<Meeting[]> {
     return await db
       .select()
       .from(meetings)
       .where(eq(meetings.userId, userId))
-      .orderBy(meetings.startTime)
+      .orderBy(desc(meetings.startTime))
       .limit(limit);
   }
 
@@ -220,15 +219,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMeeting(id: number, updates: Partial<InsertMeeting>): Promise<Meeting | undefined> {
-    const [meeting] = await db
+    const [updated] = await db
       .update(meetings)
       .set(updates)
       .where(eq(meetings.id, id))
       .returning();
-    return meeting || undefined;
+    return updated || undefined;
   }
 
-  async getMeetingStats(userId: string, startDate?: Date, endDate?: Date): Promise<{
+  async getMeetingStats(userId: number, startDate?: Date, endDate?: Date): Promise<{
     total: number;
     qualified: number;
     disqualified: number;
@@ -236,54 +235,28 @@ export class DatabaseStorage implements IStorage {
     noShow: number;
     completed: number;
   }> {
-    let query = db
-      .select({
-        status: meetings.status,
-        count: count(),
-      })
-      .from(meetings)
-      .where(eq(meetings.userId, userId));
-
+    const conditions = [eq(meetings.userId, userId)];
+    
     if (startDate) {
-      query = query.where(gte(meetings.startTime, startDate));
+      conditions.push(gte(meetings.startTime, startDate));
     }
     if (endDate) {
-      query = query.where(lte(meetings.startTime, endDate));
+      conditions.push(lte(meetings.startTime, endDate));
     }
 
-    const stats = await query.groupBy(meetings.status);
+    const allMeetings = await db
+      .select()
+      .from(meetings)
+      .where(and(...conditions));
 
-    const result = {
-      total: 0,
-      qualified: 0,
-      disqualified: 0,
-      needsReview: 0,
-      noShow: 0,
-      completed: 0,
+    return {
+      total: allMeetings.length,
+      qualified: allMeetings.filter(m => m.status === 'qualified').length,
+      disqualified: allMeetings.filter(m => m.status === 'disqualified').length,
+      needsReview: allMeetings.filter(m => m.status === 'needs_review').length,
+      noShow: allMeetings.filter(m => m.status === 'no_show').length,
+      completed: allMeetings.filter(m => m.status === 'completed').length,
     };
-
-    stats.forEach((stat) => {
-      result.total += stat.count;
-      switch (stat.status) {
-        case 'qualified':
-          result.qualified = stat.count;
-          break;
-        case 'disqualified':
-          result.disqualified = stat.count;
-          break;
-        case 'needs_review':
-          result.needsReview = stat.count;
-          break;
-        case 'no_show':
-          result.noShow = stat.count;
-          break;
-        case 'completed':
-          result.completed = stat.count;
-          break;
-      }
-    });
-
-    return result;
   }
 
   async getNoShowAnalytics(userId: string, startDate?: Date, endDate?: Date): Promise<{
@@ -294,91 +267,91 @@ export class DatabaseStorage implements IStorage {
     noShowsByCompanySize: Array<{ sizeRange: string; count: number }>;
     noShowsByRevenue: Array<{ revenueRange: string; count: number }>;
   }> {
-    let baseQuery = db
-      .select()
-      .from(meetings)
-      .where(eq(meetings.userId, userId));
-
+    const conditions = [eq(meetings.userId, userId)];
+    
     if (startDate) {
-      baseQuery = baseQuery.where(gte(meetings.startTime, startDate));
+      conditions.push(gte(meetings.startTime, startDate));
     }
     if (endDate) {
-      baseQuery = baseQuery.where(lte(meetings.startTime, endDate));
+      conditions.push(lte(meetings.startTime, endDate));
     }
 
-    const totalMeetings = await baseQuery;
-    const noShowMeetings = totalMeetings.filter(m => m.status === 'no_show');
+    const allMeetings = await db
+      .select()
+      .from(meetings)
+      .where(and(...conditions));
+
+    const noShowMeetings = allMeetings.filter(m => m.status === 'no_show');
+    const totalMeetings = allMeetings.filter(m => ['qualified', 'completed', 'no_show'].includes(m.status));
     
     const totalNoShows = noShowMeetings.length;
-    const noShowRate = totalMeetings.length > 0 ? totalNoShows / totalMeetings.length : 0;
+    const noShowRate = totalMeetings.length > 0 ? (totalNoShows / totalMeetings.length) * 100 : 0;
 
     // No-shows by time slot
-    const noShowsByTimeSlot = noShowMeetings.reduce((acc, meeting) => {
-      const hour = meeting.startTime.getHours();
-      const existing = acc.find(item => item.hour === hour);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ hour, count: 1 });
-      }
-      return acc;
-    }, [] as Array<{ hour: number; count: number }>);
+    const timeSlotCounts: Record<number, number> = {};
+    noShowMeetings.forEach(meeting => {
+      const hour = new Date(meeting.startTime).getHours();
+      timeSlotCounts[hour] = (timeSlotCounts[hour] || 0) + 1;
+    });
+    const noShowsByTimeSlot = Object.entries(timeSlotCounts).map(([hour, count]) => ({
+      hour: parseInt(hour),
+      count
+    }));
 
     // No-shows by industry
-    const noShowsByIndustry = noShowMeetings.reduce((acc, meeting) => {
-      const industry = meeting.industry || 'Unknown';
-      const existing = acc.find(item => item.industry === industry);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ industry, count: 1 });
+    const industryCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.industry) {
+        industryCounts[meeting.industry] = (industryCounts[meeting.industry] || 0) + 1;
       }
-      return acc;
-    }, [] as Array<{ industry: string; count: number }>);
+    });
+    const noShowsByIndustry = Object.entries(industryCounts).map(([industry, count]) => ({
+      industry,
+      count
+    }));
 
     // No-shows by company size
-    const noShowsByCompanySize = noShowMeetings.reduce((acc, meeting) => {
-      const size = meeting.companySize;
-      let sizeRange = 'Unknown';
-      if (size) {
-        if (size <= 10) sizeRange = '1-10';
-        else if (size <= 50) sizeRange = '11-50';
-        else if (size <= 200) sizeRange = '51-200';
-        else if (size <= 1000) sizeRange = '201-1000';
+    const sizeCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.companySize) {
+        let sizeRange;
+        if (meeting.companySize < 10) sizeRange = '1-10';
+        else if (meeting.companySize < 50) sizeRange = '11-50';
+        else if (meeting.companySize < 200) sizeRange = '51-200';
+        else if (meeting.companySize < 1000) sizeRange = '201-1000';
         else sizeRange = '1000+';
+        
+        sizeCounts[sizeRange] = (sizeCounts[sizeRange] || 0) + 1;
       }
-      const existing = acc.find(item => item.sizeRange === sizeRange);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ sizeRange, count: 1 });
-      }
-      return acc;
-    }, [] as Array<{ sizeRange: string; count: number }>);
+    });
+    const noShowsByCompanySize = Object.entries(sizeCounts).map(([sizeRange, count]) => ({
+      sizeRange,
+      count
+    }));
 
     // No-shows by revenue
-    const noShowsByRevenue = noShowMeetings.reduce((acc, meeting) => {
-      const revenue = meeting.revenue ? parseFloat(meeting.revenue) : null;
-      let revenueRange = 'Unknown';
-      if (revenue) {
-        if (revenue < 100000) revenueRange = '<$100K';
-        else if (revenue < 1000000) revenueRange = '$100K-$1M';
-        else if (revenue < 10000000) revenueRange = '$1M-$10M';
-        else if (revenue < 100000000) revenueRange = '$10M-$100M';
-        else revenueRange = '$100M+';
+    const revenueCounts: Record<string, number> = {};
+    noShowMeetings.forEach(meeting => {
+      if (meeting.revenue) {
+        const revenue = Number(meeting.revenue);
+        let revenueRange;
+        if (revenue < 10000) revenueRange = '$0-$10K';
+        else if (revenue < 50000) revenueRange = '$10K-$50K';
+        else if (revenue < 100000) revenueRange = '$50K-$100K';
+        else if (revenue < 500000) revenueRange = '$100K-$500K';
+        else revenueRange = '$500K+';
+        
+        revenueCounts[revenueRange] = (revenueCounts[revenueRange] || 0) + 1;
       }
-      const existing = acc.find(item => item.revenueRange === revenueRange);
-      if (existing) {
-        existing.count++;
-      } else {
-        acc.push({ revenueRange, count: 1 });
-      }
-      return acc;
-    }, [] as Array<{ revenueRange: string; count: number }>);
+    });
+    const noShowsByRevenue = Object.entries(revenueCounts).map(([revenueRange, count]) => ({
+      revenueRange,
+      count
+    }));
 
     return {
       totalNoShows,
-      noShowRate,
+      noShowRate: Math.round(noShowRate * 100) / 100,
       noShowsByTimeSlot,
       noShowsByIndustry,
       noShowsByCompanySize,
@@ -386,7 +359,6 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Email report methods
   async createEmailReport(report: InsertEmailReport): Promise<EmailReport> {
     const [newReport] = await db
       .insert(emailReports)
@@ -395,15 +367,14 @@ export class DatabaseStorage implements IStorage {
     return newReport;
   }
 
-  async getUserEmailReports(userId: string): Promise<EmailReport[]> {
+  async getUserEmailReports(userId: number): Promise<EmailReport[]> {
     return await db
       .select()
       .from(emailReports)
       .where(eq(emailReports.userId, userId))
-      .orderBy(emailReports.reportDate);
+      .orderBy(desc(emailReports.reportDate));
   }
 
-  // Email job methods
   async createEmailJob(job: InsertEmailJob): Promise<EmailJob> {
     const [newJob] = await db
       .insert(emailJobs)
@@ -412,69 +383,32 @@ export class DatabaseStorage implements IStorage {
     return newJob;
   }
 
-  async getUserEmailJobs(userId: string): Promise<EmailJob[]> {
+  async getUserEmailJobs(userId: number): Promise<EmailJob[]> {
     return await db
       .select()
       .from(emailJobs)
       .where(eq(emailJobs.userId, userId))
-      .orderBy(emailJobs.scheduledAt);
+      .orderBy(desc(emailJobs.createdAt));
   }
 
   async getPendingEmailJobs(): Promise<EmailJob[]> {
     return await db
       .select()
       .from(emailJobs)
-      .where(eq(emailJobs.status, 'pending'));
+      .where(and(
+        eq(emailJobs.status, 'pending'),
+        lte(emailJobs.scheduledAt, new Date())
+      ))
+      .orderBy(emailJobs.scheduledAt);
   }
 
   async updateEmailJob(id: number, updates: Partial<InsertEmailJob>): Promise<EmailJob | undefined> {
-    const [job] = await db
+    const [updated] = await db
       .update(emailJobs)
       .set(updates)
       .where(eq(emailJobs.id, id))
       .returning();
-    return job || undefined;
-  }
-
-  // Email template methods
-  async getUserEmailTemplates(userId: string): Promise<EmailTemplate[]> {
-    return await db
-      .select()
-      .from(emailTemplates)
-      .where(eq(emailTemplates.userId, userId))
-      .orderBy(emailTemplates.createdAt);
-  }
-
-  async getEmailTemplate(id: number): Promise<EmailTemplate | undefined> {
-    const [template] = await db
-      .select()
-      .from(emailTemplates)
-      .where(eq(emailTemplates.id, id));
-    return template || undefined;
-  }
-
-  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
-    const [newTemplate] = await db
-      .insert(emailTemplates)
-      .values(template)
-      .returning();
-    return newTemplate;
-  }
-
-  async updateEmailTemplate(id: number, updates: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
-    const [template] = await db
-      .update(emailTemplates)
-      .set(updates)
-      .where(eq(emailTemplates.id, id))
-      .returning();
-    return template || undefined;
-  }
-
-  async deleteEmailTemplate(id: number): Promise<boolean> {
-    const result = await db
-      .delete(emailTemplates)
-      .where(eq(emailTemplates.id, id));
-    return result.rowCount > 0;
+    return updated || undefined;
   }
 }
 

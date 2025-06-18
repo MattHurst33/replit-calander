@@ -174,8 +174,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-export type UpsertUser = typeof users.$inferInsert;
-
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({
   id: true,
   createdAt: true,
@@ -210,7 +208,7 @@ export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type UpsertUser = typeof users.$inferInsert;
+
 
 export type Integration = typeof integrations.$inferSelect;
 export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
