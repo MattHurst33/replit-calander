@@ -67,23 +67,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastProcessed: new Date(),
       });
       
-      // If meeting is being disqualified, free up the Google Calendar slot
+      // If meeting is being disqualified, check if calendar slot freeing is enabled
       if (status === 'disqualified' && meeting.externalId) {
         try {
-          const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
+          const userSettings = await storage.getUserSettings(MOCK_USER_ID);
+          const autoFreeCalendarSlots = userSettings?.autoFreeCalendarSlots ?? true;
           
-          if (googleCalendarIntegration && googleCalendarIntegration.accessToken) {
-            let eventId = meeting.externalId;
+          if (autoFreeCalendarSlots) {
+            const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
             
-            // Skip Calendly events as they manage their own calendar
-            if (!eventId.startsWith('calendly_')) {
-              // Remove prefix for Google Calendar events
-              if (eventId.startsWith('gcal_')) {
-                eventId = eventId.replace('gcal_', '');
-              }
+            if (googleCalendarIntegration && googleCalendarIntegration.accessToken) {
+              let eventId = meeting.externalId;
               
-              await googleCalendar.markEventAsFree(googleCalendarIntegration.accessToken, eventId);
-              console.log(`Freed calendar slot for disqualified meeting: ${eventId}`);
+              // Skip Calendly events as they manage their own calendar
+              if (!eventId.startsWith('calendly_')) {
+                // Remove prefix for Google Calendar events
+                if (eventId.startsWith('gcal_')) {
+                  eventId = eventId.replace('gcal_', '');
+                }
+                
+                await googleCalendar.markEventAsFree(googleCalendarIntegration.accessToken, eventId);
+                console.log(`Freed calendar slot for disqualified meeting: ${eventId}`);
+              }
             }
           }
         } catch (calendarError) {

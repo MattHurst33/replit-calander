@@ -51,9 +51,14 @@ export class QualificationEngine {
       lastProcessed: new Date(),
     });
 
-    // If meeting is disqualified, free up the Google Calendar slot
+    // If meeting is disqualified, check if calendar slot freeing is enabled
     if (status === 'disqualified' && targetMeeting.externalId) {
-      await this.freeCalendarSlot(targetMeeting.userId, targetMeeting.externalId);
+      const userSettings = await this.storage.getUserSettings(targetMeeting.userId);
+      const autoFreeCalendarSlots = userSettings?.autoFreeCalendarSlots ?? true; // Default to true for existing users
+      
+      if (autoFreeCalendarSlots) {
+        await this.freeCalendarSlot(targetMeeting.userId, targetMeeting.externalId);
+      }
     }
   }
 
