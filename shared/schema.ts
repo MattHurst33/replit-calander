@@ -73,7 +73,7 @@ export const emailReports = pgTable("email_reports", {
 
 export const emailJobs = pgTable("email_jobs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   meetingId: integer("meeting_id").notNull().references(() => meetings.id),
   type: text("type").notNull(), // 'confirmation', 'reminder', 'followup', 'qualified_appointment'
   status: text("status").notNull().default('pending'), // 'pending', 'sent', 'failed'
@@ -86,7 +86,7 @@ export const emailJobs = pgTable("email_jobs", {
 
 export const emailTemplates = pgTable("email_templates", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   type: text("type").notNull(), // 'qualified_appointment', 'follow_up', 'reminder'
   subject: text("subject").notNull(),
@@ -153,10 +153,7 @@ export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
 }));
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
+export type UpsertUser = typeof users.$inferInsert;
 
 export const insertIntegrationSchema = createInsertSchema(integrations).omit({
   id: true,

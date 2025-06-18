@@ -1,42 +1,56 @@
-import { 
-  users, integrations, qualificationRules, meetings, emailReports, emailJobs,
-  type User, type InsertUser,
-  type Integration, type InsertIntegration,
-  type QualificationRule, type InsertQualificationRule,
-  type Meeting, type InsertMeeting,
-  type EmailReport, type InsertEmailReport,
-  type EmailJob, type InsertEmailJob
+import {
+  users,
+  integrations,
+  qualificationRules,
+  meetings,
+  emailReports,
+  emailJobs,
+  emailTemplates,
+  type User,
+  type UpsertUser,
+  type Integration,
+  type InsertIntegration,
+  type QualificationRule,
+  type InsertQualificationRule,
+  type Meeting,
+  type InsertMeeting,
+  type EmailReport,
+  type InsertEmailReport,
+  type EmailJob,
+  type InsertEmailJob,
+  type EmailTemplate,
+  type InsertEmailTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  // (IMPORTANT) these user operations are mandatory for Replit Auth.
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  updateUserSettings(userId: number, settings: Record<string, any>): Promise<User | undefined>;
-  getUserSettings(userId: number): Promise<Record<string, any> | undefined>;
+  updateUserSettings(userId: string, settings: Record<string, any>): Promise<User | undefined>;
+  getUserSettings(userId: string): Promise<Record<string, any> | undefined>;
 
   // Integration methods
-  getUserIntegrations(userId: number): Promise<Integration[]>;
-  getIntegration(userId: number, type: string): Promise<Integration | undefined>;
+  getUserIntegrations(userId: string): Promise<Integration[]>;
+  getIntegration(userId: string, type: string): Promise<Integration | undefined>;
   createIntegration(integration: InsertIntegration): Promise<Integration>;
   updateIntegration(id: number, updates: Partial<InsertIntegration>): Promise<Integration | undefined>;
 
   // Qualification rule methods
-  getUserQualificationRules(userId: number): Promise<QualificationRule[]>;
+  getUserQualificationRules(userId: string): Promise<QualificationRule[]>;
   createQualificationRule(rule: InsertQualificationRule): Promise<QualificationRule>;
   updateQualificationRule(id: number, updates: Partial<InsertQualificationRule>): Promise<QualificationRule | undefined>;
   deleteQualificationRule(id: number): Promise<boolean>;
 
   // Meeting methods
-  getUserMeetings(userId: number, limit?: number): Promise<Meeting[]>;
-  getMeetingByExternalId(userId: number, externalId: string): Promise<Meeting | undefined>;
+  getUserMeetings(userId: string, limit?: number): Promise<Meeting[]>;
+  getMeetingByExternalId(userId: string, externalId: string): Promise<Meeting | undefined>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: number, updates: Partial<InsertMeeting>): Promise<Meeting | undefined>;
-  getMeetingStats(userId: number, startDate?: Date, endDate?: Date): Promise<{
+  getMeetingStats(userId: string, startDate?: Date, endDate?: Date): Promise<{
     total: number;
     qualified: number;
     disqualified: number;
@@ -45,7 +59,7 @@ export interface IStorage {
     completed: number;
   }>;
 
-  getNoShowAnalytics(userId: number, startDate?: Date, endDate?: Date): Promise<{
+  getNoShowAnalytics(userId: string, startDate?: Date, endDate?: Date): Promise<{
     totalNoShows: number;
     noShowRate: number;
     noShowsByTimeSlot: Array<{ hour: number; count: number }>;
@@ -56,16 +70,16 @@ export interface IStorage {
 
   // Email report methods
   createEmailReport(report: InsertEmailReport): Promise<EmailReport>;
-  getUserEmailReports(userId: number): Promise<EmailReport[]>;
+  getUserEmailReports(userId: string): Promise<EmailReport[]>;
 
   // Email job methods
   createEmailJob(job: InsertEmailJob): Promise<EmailJob>;
-  getUserEmailJobs(userId: number): Promise<EmailJob[]>;
+  getUserEmailJobs(userId: string): Promise<EmailJob[]>;
   getPendingEmailJobs(): Promise<EmailJob[]>;
   updateEmailJob(id: number, updates: Partial<InsertEmailJob>): Promise<EmailJob | undefined>;
 
   // Email template methods
-  getUserEmailTemplates(userId: number): Promise<EmailTemplate[]>;
+  getUserEmailTemplates(userId: string): Promise<EmailTemplate[]>;
   getEmailTemplate(id: number): Promise<EmailTemplate | undefined>;
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: number, updates: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
@@ -174,7 +188,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount || 0) > 0;
   }
 
-  async getUserMeetings(userId: number, limit = 50): Promise<Meeting[]> {
+  async getUserMeetings(userId: string, limit = 50): Promise<Meeting[]> {
     return await db
       .select()
       .from(meetings)
@@ -183,7 +197,7 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
-  async getMeetingByExternalId(userId: number, externalId: string): Promise<Meeting | undefined> {
+  async getMeetingByExternalId(userId: string, externalId: string): Promise<Meeting | undefined> {
     const [meeting] = await db
       .select()
       .from(meetings)
@@ -240,7 +254,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getNoShowAnalytics(userId: number, startDate?: Date, endDate?: Date): Promise<{
+  async getNoShowAnalytics(userId: string, startDate?: Date, endDate?: Date): Promise<{
     totalNoShows: number;
     noShowRate: number;
     noShowsByTimeSlot: Array<{ hour: number; count: number }>;

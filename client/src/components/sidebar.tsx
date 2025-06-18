@@ -7,8 +7,12 @@ import {
   Settings, 
   User,
   TrendingUp,
-  Send
+  Send,
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navigationItems = [
   { path: "/", label: "Dashboard", icon: BarChart3 },
@@ -22,6 +26,7 @@ const navigationItems = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200">

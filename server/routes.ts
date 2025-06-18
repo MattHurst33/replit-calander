@@ -189,9 +189,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get qualification rules
-  app.get("/api/qualification-rules", async (req, res) => {
+  app.get("/api/qualification-rules", isAuthenticated, async (req: any, res) => {
     try {
-      const rules = await storage.getUserQualificationRules(MOCK_USER_ID);
+      const userId = req.user.claims.sub;
+      const rules = await storage.getUserQualificationRules(userId);
       res.json(rules);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch qualification rules" });
@@ -199,11 +200,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create qualification rule
-  app.post("/api/qualification-rules", async (req, res) => {
+  app.post("/api/qualification-rules", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const ruleData = insertQualificationRuleSchema.parse({
         ...req.body,
-        userId: MOCK_USER_ID,
+        userId,
       });
       
       const rule = await storage.createQualificationRule(ruleData);
