@@ -98,8 +98,11 @@ export class EmailService {
               <strong style="color: #374151;">Revenue:</strong> ${summary.revenue}
             </div>
             <div>
-              <strong style="color: #374151;">Context:</strong><br>
-              <span style="font-size: 14px; color: #6b7280;">${summary.meetingContext}</span>
+              <strong style="color: #374151;">Contact:</strong><br>
+              <span style="font-size: 14px; color: #6b7280;">
+                Email: ${summary.email || 'Not provided'}<br>
+                Phone: ${summary.phone || 'Not provided'}
+              </span>
             </div>
           </div>
 

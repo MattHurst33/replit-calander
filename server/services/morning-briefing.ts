@@ -8,6 +8,8 @@ export interface ProspectSummary {
   company: string;
   revenue: string;
   industry: string;
+  email: string;
+  phone: string;
   painPoints: string[];
   likelyObjections: string[];
   currentSolutions: string[];
@@ -81,6 +83,8 @@ export class MorningBriefingService {
     const company = meeting.company || formData.company || "Unknown Company";
     const revenue = this.formatRevenue(meeting.revenue || formData.revenue);
     const industry = meeting.industry || formData.industry || "Unknown Industry";
+    const email = formData.email || meeting.attendeeEmail || "Not provided";
+    const phone = formData.phone || formData.phone_number || "Not provided";
 
     // Analyze pain points from form responses
     const painPoints = this.extractPainPoints(formData);
@@ -102,6 +106,8 @@ export class MorningBriefingService {
       company,
       revenue,
       industry,
+      email,
+      phone,
       painPoints,
       likelyObjections,
       currentSolutions,
@@ -308,9 +314,17 @@ export class MorningBriefingService {
               <strong style="color: #374151;">Revenue:</strong> ${summary.revenue}
             </div>
             <div>
-              <strong style="color: #374151;">Context:</strong><br>
-              <span style="font-size: 14px; color: #6b7280;">${summary.meetingContext}</span>
+              <strong style="color: #374151;">Contact:</strong><br>
+              <span style="font-size: 14px; color: #6b7280;">
+                Email: ${summary.email}<br>
+                Phone: ${summary.phone}
+              </span>
             </div>
+          </div>
+          
+          <div style="margin-bottom: 15px;">
+            <strong style="color: #374151;">Context:</strong><br>
+            <span style="font-size: 14px; color: #6b7280;">${summary.meetingContext}</span>
           </div>
 
           ${summary.painPoints.length > 0 ? `

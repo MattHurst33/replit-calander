@@ -8,12 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Sun, Mail, Brain, AlertTriangle, Target, Wrench, Eye } from "lucide-react";
+import { Sun, Mail, Brain, AlertTriangle, Target, Wrench, Eye, DollarSign, Building, User } from "lucide-react";
 
 interface MorningBriefingSettings {
   enabled: boolean;
   sendTime: string;
   emailEnabled: boolean;
+  includeRevenue: boolean;
+  includeIndustry: boolean;
+  includeContactInfo: boolean;
   includeObjections: boolean;
   includePainPoints: boolean;
   includeCurrentSolutions: boolean;
@@ -29,6 +32,9 @@ export default function MorningBriefingSettings() {
       enabled: true,
       sendTime: "08:00",
       emailEnabled: true,
+      includeRevenue: true,
+      includeIndustry: true,
+      includeContactInfo: true,
       includeObjections: true,
       includePainPoints: true,
       includeCurrentSolutions: true
@@ -148,7 +154,49 @@ export default function MorningBriefingSettings() {
                   <span>Content Settings</span>
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <DollarSign size={16} className="text-green-600" />
+                      <Label className="text-sm">Revenue</Label>
+                    </div>
+                    <Switch
+                      checked={settings?.includeRevenue}
+                      onCheckedChange={(includeRevenue) => {
+                        const newSettings = { ...settings, includeRevenue };
+                        updateSettingsMutation.mutate(newSettings);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Building size={16} className="text-blue-600" />
+                      <Label className="text-sm">Industry</Label>
+                    </div>
+                    <Switch
+                      checked={settings?.includeIndustry}
+                      onCheckedChange={(includeIndustry) => {
+                        const newSettings = { ...settings, includeIndustry };
+                        updateSettingsMutation.mutate(newSettings);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <User size={16} className="text-indigo-600" />
+                      <Label className="text-sm">Contact Info</Label>
+                    </div>
+                    <Switch
+                      checked={settings?.includeContactInfo}
+                      onCheckedChange={(includeContactInfo) => {
+                        const newSettings = { ...settings, includeContactInfo };
+                        updateSettingsMutation.mutate(newSettings);
+                      }}
+                    />
+                  </div>
+
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-2">
                       <AlertTriangle size={16} className="text-red-600" />
@@ -237,7 +285,26 @@ export default function MorningBriefingSettings() {
                             <h6 className="font-medium">10:00 AM - John Smith</h6>
                             <Badge className="bg-green-100 text-green-800">Qualified</Badge>
                           </div>
-                          <p className="text-sm text-gray-600">TechCorp • Technology • $2.5M</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                            <div className="text-sm text-gray-600">
+                              {settings?.includeIndustry && <span>TechCorp • Technology</span>}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {settings?.includeRevenue && <span>Revenue: $2.5M</span>}
+                            </div>
+                          </div>
+
+                          {settings?.includeContactInfo && (
+                            <div className="mt-2">
+                              <span className="text-xs font-medium text-indigo-700">Contact:</span>
+                              <div className="text-xs text-gray-700 mt-1">
+                                <div>Name: John Smith</div>
+                                <div>Email: john.smith@techcorp.com</div>
+                                <div>Phone: (555) 123-4567</div>
+                              </div>
+                            </div>
+                          )}
                           
                           {settings?.includePainPoints && (
                             <div className="mt-2">
