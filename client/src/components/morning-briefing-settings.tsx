@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -33,16 +33,7 @@ export default function MorningBriefingSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<MorningBriefingSettings>) => {
-      const response = await fetch('/api/settings/morning-briefing', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newSettings),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update settings');
-      }
+      const response = await apiRequest('PATCH', '/api/settings/morning-briefing', newSettings);
       return response.json();
     },
     onSuccess: () => {
