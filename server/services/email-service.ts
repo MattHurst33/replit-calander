@@ -43,6 +43,25 @@ export class EmailService {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
+  async sendPreMeetingSummary(
+    email: string,
+    summary: any,
+    meeting: Meeting
+  ): Promise<void> {
+    const startTime = new Date(meeting.startTime);
+    const subject = `🎯 Pre-Meeting Summary: ${meeting.attendeeName || 'Prospect'} (${startTime.toLocaleTimeString()})`;
+    
+    console.log(`Pre-Meeting Summary Email for ${email}:`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Meeting: ${meeting.title}`);
+    console.log(`Prospect: ${summary.name} from ${summary.company}`);
+    console.log(`Pain Points: ${summary.painPoints.join(', ')}`);
+    console.log(`Likely Objections: ${summary.likelyObjections.join(', ')}`);
+    
+    // Simulate email sending
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
   private generateDailyReportHTML(
     stats: { total: number; qualified: number; disqualified: number; needsReview: number },
     meetings: Meeting[],

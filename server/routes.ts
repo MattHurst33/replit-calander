@@ -48,6 +48,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test pre-meeting summary generation
+  app.post("/api/meetings/:id/preview-summary", async (req, res) => {
+    try {
+      const meetingId = parseInt(req.params.id);
+      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meeting = meetings.find(m => m.id === meetingId);
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+
+      const { preMeetingSummaryService } = await import("./services/pre-meeting-summary");
+      const summary = await (preMeetingSummaryService as any).generateProspectSummary(meeting);
+      
+      res.json({
+        meeting: {
+          id: meeting.id,
+          title: meeting.title,
+          attendeeName: meeting.attendeeName,
+          startTime: meeting.startTime
+        },
+        summary
+      });
+    } catch (error) {
+      console.error("Error generating preview summary:", error);
+      res.status(500).json({ message: "Failed to generate preview summary" });
+    }
+  });
+
+  // Get pre-meeting automation settings
+  app.get("/api/settings/pre-meeting", async (req, res) => {
+    try {
+      const settings = await storage.getUserSettings(MOCK_USER_ID);
+      res.json({
+        enabled: settings?.preMeetingEnabled || false,
+        leadTime: settings?.preMeetingLeadTime || 2, // minutes before meeting
+        emailEnabled: settings?.preMeetingEmailEnabled || true,
+        includeObjections: settings?.includeObjections || true,
+        includePainPoints: settings?.includePainPoints || true,
+        includeCurrentSolutions: settings?.includeCurrentSolutions || true
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pre-meeting settings" });
+    }
+  });
+
+  // Update pre-meeting automation settings
+  app.patch("/api/settings/pre-meeting", async (req, res) => {
+    try {
+      const updates = req.body;
+      const currentSettings = await storage.getUserSettings(MOCK_USER_ID) || {};
+      
+      const newSettings = {
+        ...currentSettings,
+        preMeetingEnabled: updates.enabled,
+        preMeetingLeadTime: updates.leadTime,
+        preMeetingEmailEnabled: updates.emailEnabled,
+        includeObjections: updates.includeObjections,
+        includePainPoints: updates.includePainPoints,
+        includeCurrentSolutions: updates.includeCurrentSolutions
+      };
+      
+      await storage.updateUserSettings(MOCK_USER_ID, newSettings);
+      
+      res.json({ success: true, settings: newSettings });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update pre-meeting settings" });
+    }
+  });
+
   // Get meetings
   app.get("/api/meetings", async (req, res) => {
     try {
