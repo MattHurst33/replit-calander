@@ -1,4 +1,4 @@
-import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,40 @@ interface MeetingCardProps {
 }
 
 export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
+  const { toast } = useToast();
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  const sendConfirmationEmail = async () => {
+    try {
+      setIsSendingEmail(true);
+      const response = await fetch(`/api/meetings/${meeting.id}/send-confirmation`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Email Sent",
+          description: "Confirmation email sent successfully to the prospect.",
+        });
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Email Failed",
+          description: error.message || "Failed to send confirmation email.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Email Failed",
+        description: "Network error occurred while sending email.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'qualified':
@@ -91,6 +125,21 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
         </div>
       </div>
       <div className="flex items-center space-x-2">
+        {meeting.status === 'qualified' && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={sendConfirmationEmail}
+            disabled={isSendingEmail}
+            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+          >
+            {isSendingEmail ? (
+              <RefreshCw className="animate-spin" size={16} />
+            ) : (
+              <Mail size={16} />
+            )}
+          </Button>
+        )}
         <Button variant="ghost" size="sm">
           <ExternalLink size={16} />
         </Button>

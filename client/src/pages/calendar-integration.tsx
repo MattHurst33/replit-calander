@@ -7,11 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, RefreshCw, Calendar, AlertCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface DashboardStats {
+  total: number;
+  qualified: number;
+  disqualified: number;
+  needsReview: number;
+  integrations: {
+    googleCalendar: boolean;
+    calendly: boolean;
+    gmail: boolean;
+  };
+}
+
 export default function CalendarIntegration() {
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
   });
 
