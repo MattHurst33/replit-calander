@@ -37,6 +37,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get no-show analytics
+  app.get("/api/analytics/no-shows", async (req, res) => {
+    try {
+      const analytics = await storage.getNoShowAnalytics(MOCK_USER_ID);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching no-show analytics:", error);
+      res.status(500).json({ message: "Failed to fetch no-show analytics" });
+    }
+  });
+
   // Get meetings
   app.get("/api/meetings", async (req, res) => {
     try {
@@ -271,6 +282,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to qualify meeting" });
+    }
+  });
+
+  // Mark meeting as no-show
+  app.post("/api/meetings/:id/no-show", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      const meeting = await storage.updateMeeting(id, { 
+        status: 'no_show',
+        noShowReason: reason || 'did_not_attend',
+        noShowDate: new Date().toISOString()
+      });
+      
+      if (!meeting) {
+        return res.status(404).json({ message: "Meeting not found" });
+      }
+      
+      res.json(meeting);
+    } catch (error) {
+      console.error("Error marking meeting as no-show:", error);
+      res.status(500).json({ message: "Failed to mark meeting as no-show" });
     }
   });
 

@@ -9,6 +9,7 @@ import CalendarIntegration from "@/pages/calendar-integration";
 import QualificationRules from "@/pages/qualification-rules";
 import Analytics from "@/pages/analytics";
 import EmailReports from "@/pages/email-reports";
+import NoShowAnalytics from "@/pages/no-show-analytics";
 import Settings from "@/pages/settings";
 import Sidebar from "@/components/sidebar";
 
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/calendar-integration" component={CalendarIntegration} />
           <Route path="/qualification-rules" component={QualificationRules} />
           <Route path="/analytics" component={Analytics} />
+          <Route path="/no-show-analytics" component={NoShowAnalytics} />
           <Route path="/email-reports" component={EmailReports} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
