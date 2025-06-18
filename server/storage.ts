@@ -63,6 +63,13 @@ export interface IStorage {
   getUserEmailJobs(userId: number): Promise<EmailJob[]>;
   getPendingEmailJobs(): Promise<EmailJob[]>;
   updateEmailJob(id: number, updates: Partial<InsertEmailJob>): Promise<EmailJob | undefined>;
+
+  // Email template methods
+  getUserEmailTemplates(userId: number): Promise<EmailTemplate[]>;
+  getEmailTemplate(id: number): Promise<EmailTemplate | undefined>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, updates: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {

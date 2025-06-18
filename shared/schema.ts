@@ -91,6 +91,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   meetings: many(meetings),
   emailReports: many(emailReports),
   emailJobs: many(emailJobs),
+  emailTemplates: many(emailTemplates),
 }));
 
 export const integrationsRelations = relations(integrations, ({ one }) => ({
@@ -129,6 +130,13 @@ export const emailJobsRelations = relations(emailJobs, ({ one }) => ({
   meeting: one(meetings, {
     fields: [emailJobs.meetingId],
     references: [meetings.id],
+  }),
+}));
+
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  user: one(users, {
+    fields: [emailTemplates.userId],
+    references: [users.id],
   }),
 }));
 
@@ -181,3 +189,6 @@ export type InsertEmailReport = z.infer<typeof insertEmailReportSchema>;
 
 export type EmailJob = typeof emailJobs.$inferSelect;
 export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
