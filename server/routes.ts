@@ -8,6 +8,7 @@ import { QualificationEngine } from "./services/qualification-engine";
 import { EmailService } from "./services/email-service";
 import { GmailService } from "./services/gmail-service";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { noShowRescheduleService } from "./services/no-show-reschedule";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
