@@ -1,4 +1,4 @@
-import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle, RefreshCw, CalendarX } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Eye, EyeOff, Mail, CheckCircle, RefreshCw, CalendarX, UserX, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
   const { toast } = useToast();
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isFreeingSlot, setIsFreeingSlot] = useState(false);
+  const [isMarkingNoShow, setIsMarkingNoShow] = useState(false);
 
   const sendConfirmationEmail = async () => {
     try {
@@ -82,6 +83,45 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
     }
   };
 
+  const markAsNoShow = async () => {
+    try {
+      setIsMarkingNoShow(true);
+      const response = await fetch(`/api/meetings/${meeting.id}/no-show`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason: 'did_not_attend' }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Marked as No-Show",
+          description: "Meeting has been marked as a no-show for analytics tracking.",
+        });
+        // Trigger a refresh of the meeting data
+        if (onUpdate) {
+          onUpdate(meeting.id, 'no_show');
+        }
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Failed to Mark No-Show",
+          description: error.message || "Failed to mark meeting as no-show.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Network Error",
+        description: "Failed to connect to server.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMarkingNoShow(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'qualified':
@@ -90,6 +130,10 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
         return 'border-red-200 bg-red-50';
       case 'needs_review':
         return 'border-amber-200 bg-amber-50';
+      case 'no_show':
+        return 'border-purple-200 bg-purple-50';
+      case 'completed':
+        return 'border-blue-200 bg-blue-50';
       default:
         return 'border-slate-200 bg-slate-50';
     }
@@ -103,6 +147,10 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
         return <Badge className="bg-red-100 text-red-800">Disqualified</Badge>;
       case 'needs_review':
         return <Badge className="bg-amber-100 text-amber-800">Needs Review</Badge>;
+      case 'no_show':
+        return <Badge className="bg-purple-100 text-purple-800">No Show</Badge>;
+      case 'completed':
+        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
       default:
         return <Badge className="bg-slate-100 text-slate-800">Pending</Badge>;
     }
@@ -127,6 +175,10 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
         return 'w-3 h-3 bg-red-500 rounded-full';
       case 'needs_review':
         return 'w-3 h-3 bg-amber-500 rounded-full';
+      case 'no_show':
+        return 'w-3 h-3 bg-purple-500 rounded-full';
+      case 'completed':
+        return 'w-3 h-3 bg-blue-500 rounded-full';
       default:
         return 'w-3 h-3 bg-slate-500 rounded-full';
     }
@@ -191,6 +243,22 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
               <RefreshCw className="animate-spin" size={16} />
             ) : (
               <CalendarX size={16} />
+            )}
+          </Button>
+        )}
+        {(meeting.status === 'qualified' || meeting.status === 'completed') && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={markAsNoShow}
+            disabled={isMarkingNoShow}
+            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+            title="Mark as no-show"
+          >
+            {isMarkingNoShow ? (
+              <RefreshCw className="animate-spin" size={16} />
+            ) : (
+              <UserX size={16} />
             )}
           </Button>
         )}
