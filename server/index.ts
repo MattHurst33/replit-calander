@@ -80,5 +80,7 @@ app.use((req, res, next) => {
     calendarCleanupService.startProcessing();
     groomingEfficiencyService.startProcessing();
     calendarScannerService.startProcessing();
+    inviteTrackingService.startProcessing();
+    autoRescheduleService.startProcessing();
   });
 })();
