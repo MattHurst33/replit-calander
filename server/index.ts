@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { emailQueue } from "./services/email-queue";
 import { morningBriefingService } from "./services/morning-briefing";
 import { calendarCleanupService } from "./services/calendar-cleanup";
+import { groomingEfficiencyService } from "./services/grooming-efficiency";
 
 const app = express();
 app.use(express.json());
@@ -73,5 +74,7 @@ app.use((req, res, next) => {
     // Start background services
     emailQueue.startProcessing();
     morningBriefingService.startScheduler();
+    calendarCleanupService.startProcessing();
+    groomingEfficiencyService.startProcessing();
   });
 })();

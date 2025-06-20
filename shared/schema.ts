@@ -170,6 +170,13 @@ export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
   }),
 }));
 
+export const groomingMetricsRelations = relations(groomingMetrics, ({ one }) => ({
+  user: one(users, {
+    fields: [groomingMetrics.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -230,3 +237,12 @@ export type InsertEmailJob = z.infer<typeof insertEmailJobSchema>;
 
 export type EmailTemplate = typeof emailTemplates.$inferSelect;
 export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+
+export const insertGroomingMetricsSchema = createInsertSchema(groomingMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type GroomingMetrics = typeof groomingMetrics.$inferSelect;
+export type InsertGroomingMetrics = z.infer<typeof insertGroomingMetricsSchema>;

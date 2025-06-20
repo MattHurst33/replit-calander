@@ -10,6 +10,7 @@ import { GmailService } from "./services/gmail-service";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { noShowRescheduleService } from "./services/no-show-reschedule";
 import { calendarCleanupService } from "./services/calendar-cleanup";
+import { groomingEfficiencyService } from "./services/grooming-efficiency";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -752,6 +753,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting calendar cleanup stats:", error);
       res.status(500).json({ message: "Failed to get cleanup statistics" });
+    }
+  });
+
+  // Get grooming efficiency metrics
+  app.get("/api/grooming-efficiency", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { weeks } = req.query;
+      
+      const currentWeekMetrics = await groomingEfficiencyService.getUserWeeklyMetrics(userId);
+      const historicalMetrics = await groomingEfficiencyService.getUserHistoricalMetrics(
+        userId, 
+        weeks ? parseInt(weeks as string) : 12
+      );
+      
+      res.json({
+        currentWeek: currentWeekMetrics,
+        historical: historicalMetrics
+      });
+    } catch (error) {
+      console.error("Error getting grooming efficiency metrics:", error);
+      res.status(500).json({ message: "Failed to get efficiency metrics" });
+    }
+  });
+
+  // Get team efficiency report (for managers)
+  app.post("/api/team-efficiency", isAuthenticated, async (req: any, res) => {
+    try {
+      const { teamUserIds, weeks } = req.body;
+      
+      if (!teamUserIds || !Array.isArray(teamUserIds)) {
+        return res.status(400).json({ message: "teamUserIds array is required" });
+      }
+      
+      const report = await groomingEfficiencyService.getTeamEfficiencyReport(
+        teamUserIds,
+        weeks || 4
+      );
+      
+      res.json(report);
+    } catch (error) {
+      console.error("Error generating team efficiency report:", error);
+      res.status(500).json({ message: "Failed to generate team report" });
+    }
+  });
+
+  // Trigger metrics calculation
+  app.post("/api/calculate-metrics", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await groomingEfficiencyService.triggerMetricsCalculation(userId);
+      res.json({ success: true, message: "Metrics calculation triggered" });
+    } catch (error) {
+      console.error("Error triggering metrics calculation:", error);
+      res.status(500).json({ message: "Failed to calculate metrics" });
     }
   });
 

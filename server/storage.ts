@@ -6,6 +6,7 @@ import {
   emailReports,
   emailJobs,
   emailTemplates,
+  groomingMetrics,
   type User,
   type UpsertUser,
   type Integration,
@@ -20,6 +21,8 @@ import {
   type InsertEmailJob,
   type EmailTemplate,
   type InsertEmailTemplate,
+  type GroomingMetrics,
+  type InsertGroomingMetrics,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, count, sql } from "drizzle-orm";
@@ -85,6 +88,12 @@ export interface IStorage {
   createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
   updateEmailTemplate(id: number, updates: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
   deleteEmailTemplate(id: number): Promise<boolean>;
+
+  // Grooming metrics methods
+  getUserGroomingMetrics(userId: string, weekStart?: Date): Promise<GroomingMetrics | undefined>;
+  getHistoricalGroomingMetrics(userId: string, weeks?: number): Promise<GroomingMetrics[]>;
+  createGroomingMetrics(metrics: InsertGroomingMetrics): Promise<GroomingMetrics>;
+  updateGroomingMetrics(id: number, updates: Partial<InsertGroomingMetrics>): Promise<GroomingMetrics | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
