@@ -11,6 +11,9 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { noShowRescheduleService } from "./services/no-show-reschedule";
 import { calendarCleanupService } from "./services/calendar-cleanup";
 import { groomingEfficiencyService } from "./services/grooming-efficiency";
+import { googleCalendarIntegration } from "./services/google-calendar-integration";
+import { outlookIntegration } from "./services/outlook-integration";
+import { calendarScannerService } from "./services/calendar-scanner";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -808,6 +811,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error triggering metrics calculation:", error);
       res.status(500).json({ message: "Failed to calculate metrics" });
+    }
+  });
+
+  // Google Calendar OAuth flow
+  app.get("/api/auth/google/calendar", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const authUrl = googleCalendarIntegration.getAuthUrl(userId);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error generating Google auth URL:", error);
+      res.status(500).json({ message: "Failed to generate authorization URL" });
+    }
+  });
+
+  // Google Calendar OAuth callback
+  app.get("/api/auth/google/callback", async (req, res) => {
+    try {
+      const { code, state: userId } = req.query;
+      
+      if (!code || !userId) {
+        return res.status(400).json({ message: "Missing authorization code or user ID" });
+      }
+
+      await googleCalendarIntegration.exchangeCodeForTokens(code as string, userId as string);
+      
+      // Redirect to success page
+      res.redirect('/calendar-integration?google=success');
+    } catch (error) {
+      console.error("Error in Google Calendar callback:", error);
+      res.redirect('/calendar-integration?google=error');
+    }
+  });
+
+  // Outlook Calendar OAuth flow
+  app.get("/api/auth/outlook/calendar", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const authUrl = outlookIntegration.getAuthUrl(userId);
+      res.json({ authUrl });
+    } catch (error) {
+      console.error("Error generating Outlook auth URL:", error);
+      res.status(500).json({ message: "Failed to generate authorization URL" });
+    }
+  });
+
+  // Outlook Calendar OAuth callback
+  app.get("/api/auth/outlook/callback", async (req, res) => {
+    try {
+      const { code, state: userId } = req.query;
+      
+      if (!code || !userId) {
+        return res.status(400).json({ message: "Missing authorization code or user ID" });
+      }
+
+      await outlookIntegration.exchangeCodeForTokens(code as string, userId as string);
+      
+      // Redirect to success page
+      res.redirect('/calendar-integration?outlook=success');
+    } catch (error) {
+      console.error("Error in Outlook Calendar callback:", error);
+      res.redirect('/calendar-integration?outlook=error');
+    }
+  });
+
+  // Manual calendar scan
+  app.post("/api/scan-calendars", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const results = await calendarScannerService.triggerScanForUser(userId);
+      
+      res.json({
+        success: true,
+        results,
+        message: `Scan completed. Google: ${results.google.imported} imported, Outlook: ${results.outlook.imported} imported`
+      });
+    } catch (error) {
+      console.error("Error triggering calendar scan:", error);
+      res.status(500).json({ message: "Failed to scan calendars" });
+    }
+  });
+
+  // Get calendar integration status
+  app.get("/api/calendar-integrations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const googleIntegration = await storage.getIntegration(userId, 'google_calendar');
+      const outlookIntegration = await storage.getIntegration(userId, 'outlook_calendar');
+      const scanStats = await calendarScannerService.getScanStats(userId);
+      
+      res.json({
+        google: {
+          connected: !!googleIntegration,
+          lastConnected: googleIntegration?.createdAt || null
+        },
+        outlook: {
+          connected: !!outlookIntegration,
+          lastConnected: outlookIntegration?.createdAt || null
+        },
+        scanStats
+      });
+    } catch (error) {
+      console.error("Error getting calendar integration status:", error);
+      res.status(500).json({ message: "Failed to get integration status" });
+    }
+  });
+
+  // Disconnect calendar integration
+  app.delete("/api/calendar-integrations/:type", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type } = req.params;
+      
+      if (!['google_calendar', 'outlook_calendar'].includes(type)) {
+        return res.status(400).json({ message: "Invalid integration type" });
+      }
+
+      const integration = await storage.getIntegration(userId, type);
+      if (integration) {
+        await storage.updateIntegration(integration.id, { isActive: false });
+      }
+      
+      res.json({ success: true, message: `${type} integration disconnected` });
+    } catch (error) {
+      console.error("Error disconnecting calendar integration:", error);
+      res.status(500).json({ message: "Failed to disconnect integration" });
     }
   });
 
