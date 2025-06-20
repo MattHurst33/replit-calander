@@ -12,6 +12,7 @@ import QualificationRules from "@/pages/qualification-rules";
 import Analytics from "@/pages/analytics";
 import EmailReports from "@/pages/email-reports";
 import EmailAutomation from "@/pages/email-automation";
+import InviteTracking from "@/pages/invite-tracking";
 import Settings from "@/pages/settings";
 import Sidebar from "@/components/sidebar";
 
@@ -77,6 +78,14 @@ function Router() {
               <Sidebar />
               <div className="pl-64">
                 <EmailAutomation />
+              </div>
+            </div>
+          )} />
+          <Route path="/invite-tracking" component={() => (
+            <div className="min-h-screen bg-slate-50">
+              <Sidebar />
+              <div className="pl-64">
+                <InviteTracking />
               </div>
             </div>
           )} />

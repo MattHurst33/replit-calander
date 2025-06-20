@@ -73,6 +73,10 @@ export const meetings = pgTable("meetings", {
   noShowReason: text("no_show_reason"), // 'did_not_attend', 'cancelled_late', 'rescheduled_no_show'
   calendarDeleted: boolean("calendar_deleted").default(false), // Track if deleted from calendar
   deletedAt: timestamp("deleted_at"), // When it was deleted from calendar
+  inviteAccepted: boolean("invite_accepted"),
+  inviteStatus: varchar("invite_status", { length: 50 }), // 'sent', 'accepted', 'declined', 'pending', 'unknown'
+  inviteLastChecked: timestamp("invite_last_checked"),
+  attendeeResponses: jsonb("attendee_responses"), // Store individual attendee responses
   lastProcessed: timestamp("last_processed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

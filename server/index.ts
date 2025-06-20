@@ -6,6 +6,7 @@ import { morningBriefingService } from "./services/morning-briefing";
 import { calendarCleanupService } from "./services/calendar-cleanup";
 import { groomingEfficiencyService } from "./services/grooming-efficiency";
 import { calendarScannerService } from "./services/calendar-scanner";
+import { inviteTrackingService } from "./services/invite-tracking";
 
 const app = express();
 app.use(express.json());
