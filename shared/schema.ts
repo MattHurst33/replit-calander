@@ -77,6 +77,10 @@ export const meetings = pgTable("meetings", {
   inviteStatus: varchar("invite_status", { length: 50 }), // 'sent', 'accepted', 'declined', 'pending', 'unknown'
   inviteLastChecked: timestamp("invite_last_checked"),
   attendeeResponses: jsonb("attendee_responses"), // Store individual attendee responses
+  autoRescheduleAttempts: integer("auto_reschedule_attempts").default(0),
+  lastRescheduleAttempt: timestamp("last_reschedule_attempt"),
+  rescheduleEmailSent: boolean("reschedule_email_sent").default(false),
+  originalMeetingTime: timestamp("original_meeting_time"), // Store original time for tracking
   lastProcessed: timestamp("last_processed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

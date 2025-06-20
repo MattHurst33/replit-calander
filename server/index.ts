@@ -7,6 +7,7 @@ import { calendarCleanupService } from "./services/calendar-cleanup";
 import { groomingEfficiencyService } from "./services/grooming-efficiency";
 import { calendarScannerService } from "./services/calendar-scanner";
 import { inviteTrackingService } from "./services/invite-tracking";
+import { autoRescheduleService } from "./services/auto-reschedule";
 
 const app = express();
 app.use(express.json());
