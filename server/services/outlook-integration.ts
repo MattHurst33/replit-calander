@@ -1,23 +1,12 @@
-import { Client } from '@azure/msal-node';
 import axios from 'axios';
 import { storage } from "../storage";
 import { QualificationEngine } from "./qualification-engine";
 
 export class OutlookIntegration {
-  private msalClient: any;
   private qualificationEngine: QualificationEngine;
 
   constructor() {
     this.qualificationEngine = new QualificationEngine(storage);
-    
-    // Initialize MSAL client for Microsoft Graph API
-    this.msalClient = new Client({
-      auth: {
-        clientId: process.env.MICROSOFT_CLIENT_ID || '',
-        clientSecret: process.env.MICROSOFT_CLIENT_SECRET || '',
-        authority: 'https://login.microsoftonline.com/common'
-      }
-    });
   }
 
   // Get authorization URL for OAuth flow
