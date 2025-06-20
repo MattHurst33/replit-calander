@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, ExternalLink, Refresh, Settings, CheckCircle, Calendar, Cloud, Scan, Unlink } from "lucide-react";
+import { CalendarDays, ExternalLink, RefreshCw, Settings, CheckCircle, Calendar, Cloud, Scan, Unlink } from "lucide-react";
 import { format } from "date-fns";
 
 interface CalendarIntegration {
@@ -207,7 +207,7 @@ export default function CalendarIntegration() {
             >
               {scanCalendarsMutation.isPending ? (
                 <>
-                  <Refresh className="animate-spin mr-2" size={16} />
+                  <RefreshCw className="animate-spin mr-2" size={16} />
                   Scanning...
                 </>
               ) : (
