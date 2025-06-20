@@ -114,6 +114,25 @@ export const emailTemplates = pgTable("email_templates", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Time tracking for grooming efficiency
+export const groomingMetrics = pgTable("grooming_metrics", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  weekStart: timestamp("week_start").notNull(),
+  weekEnd: timestamp("week_end").notNull(),
+  totalMeetings: integer("total_meetings").default(0).notNull(),
+  qualifiedMeetings: integer("qualified_meetings").default(0).notNull(),
+  disqualifiedMeetings: integer("disqualified_meetings").default(0).notNull(),
+  autoQualifiedMeetings: integer("auto_qualified_meetings").default(0).notNull(),
+  autoDisqualifiedMeetings: integer("auto_disqualified_meetings").default(0).notNull(),
+  manualReviewMeetings: integer("manual_review_meetings").default(0).notNull(),
+  timeSpentGroomingMinutes: integer("time_spent_grooming_minutes").default(0).notNull(),
+  timeSavedMinutes: integer("time_saved_minutes").default(0).notNull(),
+  automationAccuracy: decimal("automation_accuracy", { precision: 5, scale: 2 }).default("0.00"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   integrations: many(integrations),
@@ -122,6 +141,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   emailReports: many(emailReports),
   emailJobs: many(emailJobs),
   emailTemplates: many(emailTemplates),
+  groomingMetrics: many(groomingMetrics),
 }));
 
 export const integrationsRelations = relations(integrations, ({ one }) => ({
