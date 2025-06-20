@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { emailQueue } from "./services/email-queue";
 import { morningBriefingService } from "./services/morning-briefing";
+import { calendarCleanupService } from "./services/calendar-cleanup";
 
 const app = express();
 app.use(express.json());

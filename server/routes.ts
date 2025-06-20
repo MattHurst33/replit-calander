@@ -9,6 +9,7 @@ import { EmailService } from "./services/email-service";
 import { GmailService } from "./services/gmail-service";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { noShowRescheduleService } from "./services/no-show-reschedule";
+import { calendarCleanupService } from "./services/calendar-cleanup";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -720,6 +721,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to send daily report" });
+    }
+  });
+
+  // Manual trigger calendar cleanup
+  app.post("/api/manual-calendar-cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const result = await calendarCleanupService.triggerCleanupForUser(userId);
+      
+      res.json({
+        success: true,
+        deleted: result.deleted,
+        errors: result.errors,
+        message: `Cleanup completed. ${result.deleted} meetings deleted from calendar.`
+      });
+    } catch (error) {
+      console.error("Error triggering manual calendar cleanup:", error);
+      res.status(500).json({ message: "Failed to trigger calendar cleanup" });
+    }
+  });
+
+  // Get calendar cleanup statistics
+  app.get("/api/calendar-cleanup-stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const stats = await calendarCleanupService.getCleanupStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting calendar cleanup stats:", error);
+      res.status(500).json({ message: "Failed to get cleanup statistics" });
     }
   });
 

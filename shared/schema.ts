@@ -71,6 +71,8 @@ export const meetings = pgTable("meetings", {
   formData: jsonb("form_data").$type<Record<string, any>>(),
   noShowMarkedAt: timestamp("no_show_marked_at"),
   noShowReason: text("no_show_reason"), // 'did_not_attend', 'cancelled_late', 'rescheduled_no_show'
+  calendarDeleted: boolean("calendar_deleted").default(false), // Track if deleted from calendar
+  deletedAt: timestamp("deleted_at"), // When it was deleted from calendar
   lastProcessed: timestamp("last_processed"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
