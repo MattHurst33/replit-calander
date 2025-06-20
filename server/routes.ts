@@ -144,6 +144,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get calendar cleanup settings
+  app.get("/api/settings/calendar-cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const settings = await storage.getUserSettings(userId);
+      res.json({
+        autoDeleteDisqualified: settings?.autoDeleteDisqualified ?? false,
+        notifyCalendarDeletions: settings?.notifyCalendarDeletions ?? true,
+        cleanupDelayMinutes: settings?.cleanupDelayMinutes ?? 5
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch calendar cleanup settings" });
+    }
+  });
+
+  // Update calendar cleanup settings
+  app.patch("/api/settings/calendar-cleanup", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const updates = req.body;
+      
+      const currentSettings = await storage.getUserSettings(userId) || {};
+      
+      const updatedSettings = {
+        ...currentSettings,
+        autoDeleteDisqualified: updates.autoDeleteDisqualified ?? currentSettings.autoDeleteDisqualified,
+        notifyCalendarDeletions: updates.notifyCalendarDeletions ?? currentSettings.notifyCalendarDeletions,
+        cleanupDelayMinutes: updates.cleanupDelayMinutes ?? currentSettings.cleanupDelayMinutes
+      };
+      
+      await storage.updateUserSettings(userId, updatedSettings);
+      
+      res.json({ success: true, settings: updatedSettings });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update calendar cleanup settings" });
+    }
+  });
+
   // Get pre-meeting automation settings
   app.get("/api/settings/pre-meeting", isAuthenticated, async (req: any, res) => {
     try {

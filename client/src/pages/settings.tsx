@@ -30,6 +30,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import MorningBriefingSettings from "@/components/morning-briefing-settings";
+import CalendarCleanupSettings from "@/components/calendar-cleanup-settings";
 
 const profileSchema = z.object({
   name: z.string().min(1, "Name is required"),
