@@ -10,6 +10,14 @@
 			"problemMatcher": [
 				"$tsc"
 			]
+		},
+		{
+			"label": "Simple React Server",
+			"type": "shell",
+			"command": "npx tsx server/dev-server.ts",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }
