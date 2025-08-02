@@ -34,10 +34,10 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex items-center px-6 py-4 border-b border-slate-200">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
-              <BarChart3 className="text-white text-sm" size={16} />
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <Calendar className="text-white text-sm" size={16} />
             </div>
-            <span className="text-xl font-semibold text-slate-900">DataFlow</span>
+            <span className="text-xl font-semibold text-slate-900">My Calendar App</span>
           </div>
         </div>
 
@@ -54,13 +54,13 @@ export default function Sidebar() {
                 className={`
                   group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors
                   ${isActive 
-                    ? 'bg-brand-50 text-brand-700' 
+                    ? 'bg-blue-50 text-blue-700' 
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }
                 `}
               >
                 <Icon 
-                  className={`mr-3 ${isActive ? 'text-brand-500' : ''}`} 
+                  className={`mr-3 ${isActive ? 'text-blue-500' : ''}`} 
                   size={16} 
                 />
                 {item.label}

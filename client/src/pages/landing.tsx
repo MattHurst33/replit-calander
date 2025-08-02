@@ -1,23 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Calendar, BarChart3, Mail, Send, Filter } from "lucide-react";
+import { CheckCircle, Calendar, BarChart3, Mail, Send, Filter, Zap, Clock, Users } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-16">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-slate-900 mb-6">
-            AI-Powered Calendar Grooming Agent
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            My Calendar App
           </h1>
-          <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
-            Automatically qualify and disqualify meetings based on preset criteria. 
-            Save 30-60 minutes of manual grooming time every day.
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            A powerful calendar management system built with React, TypeScript, and modern web technologies. 
+            Streamline your scheduling and boost productivity.
           </p>
           <Button 
             size="lg" 
-            className="bg-brand-600 hover:bg-brand-700 text-white px-8 py-4 text-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg"
             onClick={() => window.location.href = '/api/login'}
           >
             Get Started
@@ -26,62 +26,62 @@ export default function Landing() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <Filter className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Smart Qualification</CardTitle>
+              <Calendar className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Smart Calendar Management</CardTitle>
               <CardDescription>
-                Set custom rules to automatically qualify or disqualify meetings based on revenue, company size, industry, and more.
+                Intelligent calendar integration with Google Calendar and Outlook. Manage multiple calendars in one place.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <Calendar className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Calendar Integration</CardTitle>
+              <Filter className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Meeting Qualification</CardTitle>
               <CardDescription>
-                Seamlessly connects with Google Calendar and Calendly to process 10-20 meetings daily with color-coded status indicators.
+                Set custom rules to automatically organize and prioritize your meetings based on your criteria.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <BarChart3 className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Analytics & Insights</CardTitle>
+              <BarChart3 className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Analytics & Reports</CardTitle>
               <CardDescription>
-                Track no-show patterns, qualification rates, and get comprehensive analytics to optimize your meeting pipeline.
+                Comprehensive analytics dashboard with insights into your calendar usage and meeting patterns.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <Mail className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Morning Briefings</CardTitle>
+              <Mail className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Email Integration</CardTitle>
               <CardDescription>
-                Receive daily email summaries with prospect insights, pain points, and meeting context to prepare for your day.
+                Seamless email integration with automated notifications and customizable templates.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <Send className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Email Automation</CardTitle>
+              <Zap className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Real-time Updates</CardTitle>
               <CardDescription>
-                Send personalized follow-up emails to qualified prospects using customizable templates with dynamic variables.
+                Live synchronization across all your devices with instant updates and notifications.
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
-              <CheckCircle className="h-8 w-8 text-brand-600 mb-2" />
-              <CardTitle>Time Savings</CardTitle>
+              <Clock className="h-8 w-8 text-blue-600 mb-2" />
+              <CardTitle>Time Management</CardTitle>
               <CardDescription>
-                Eliminate manual meeting review and save 30-60 minutes daily with automated qualification and calendar management.
+                Advanced scheduling features and time-saving automation to optimize your productivity.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -89,30 +89,30 @@ export default function Landing() {
 
         {/* Benefits Section */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-8">
-            Perfect for B2B Sales Teams
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">
+            Built with Modern Technologies
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="flex flex-col items-center">
+              <div className="bg-blue-100 rounded-full p-4 mb-4">
+                <CheckCircle className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-lg mb-2">React & TypeScript</h3>
+              <p className="text-gray-600">Built with modern React 18 and TypeScript for type safety</p>
+            </div>
             <div className="flex flex-col items-center">
               <div className="bg-green-100 rounded-full p-4 mb-4">
                 <CheckCircle className="h-8 w-8 text-green-600" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Qualified Meetings</h3>
-              <p className="text-slate-600">Automatically marked in green with follow-up emails sent</p>
+              <h3 className="font-semibold text-lg mb-2">Tailwind CSS</h3>
+              <p className="text-gray-600">Beautiful, responsive design with Tailwind CSS and Shadcn/UI</p>
             </div>
             <div className="flex flex-col items-center">
-              <div className="bg-red-100 rounded-full p-4 mb-4">
-                <CheckCircle className="h-8 w-8 text-red-600" />
+              <div className="bg-purple-100 rounded-full p-4 mb-4">
+                <CheckCircle className="h-8 w-8 text-purple-600" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">Disqualified Meetings</h3>
-              <p className="text-slate-600">Marked in red with optional calendar slot freeing</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="bg-yellow-100 rounded-full p-4 mb-4">
-                <CheckCircle className="h-8 w-8 text-yellow-600" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">Manual Review</h3>
-              <p className="text-slate-600">Edge cases marked in yellow for human decision</p>
+              <h3 className="font-semibold text-lg mb-2">Full-Stack Ready</h3>
+              <p className="text-gray-600">Complete with Express.js backend and PostgreSQL database</p>
             </div>
           </div>
         </div>

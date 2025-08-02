@@ -1,9 +1,12 @@
 {
-  "name": "rest-express",
+  "name": "my-calendar-app",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "description": "A custom calendar management and meeting qualification system",
+  "author": "Your Name",
   "scripts": {
+    "setup": "node setup.js",
     "dev": "NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
