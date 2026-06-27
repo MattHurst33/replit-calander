@@ -31,19 +31,23 @@ export class MorningBriefingService {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
     
-    const meetings = await storage.getUserMeetings(1, 1000); // Get all meetings for user 1
+    const allUsers = await storage.getAllUsers();
 
-    const todaysMeetings = meetings.filter(meeting => {
-      const startTime = new Date(meeting.startTime);
-      return startTime >= todayStart && startTime < todayEnd && 
-             (meeting.status === 'qualified' || meeting.status === 'needs_review');
-    });
+    for (const user of allUsers) {
+      const settings = user.settings as Record<string, any>;
+      if (!settings?.morningBriefingEnabled) continue;
 
-    if (todaysMeetings.length === 0) {
-      return; // No meetings today, skip briefing
+      const meetings = await storage.getUserMeetings(user.id, 1000);
+      const todaysMeetings = meetings.filter(meeting => {
+        const startTime = new Date(meeting.startTime);
+        return startTime >= todayStart && startTime < todayEnd &&
+               (meeting.status === 'qualified' || meeting.status === 'needs_review');
+      });
+
+      if (todaysMeetings.length === 0) continue;
+
+      await this.generateAndSendBriefing(todaysMeetings);
     }
-
-    await this.generateAndSendBriefing(todaysMeetings);
   }
 
   private async generateAndSendBriefing(meetings: Meeting[]) {

@@ -10,9 +10,8 @@ export class QualificationEngine {
   }
 
   async qualifyMeeting(meetingId: number): Promise<void> {
-    const meeting = await this.storage.getUserMeetings(1, 1000);
-    const targetMeeting = meeting.find(m => m.id === meetingId);
-    
+    const targetMeeting = await this.storage.getMeetingById(meetingId);
+
     if (!targetMeeting) {
       throw new Error('Meeting not found');
     }
@@ -142,7 +141,7 @@ export class QualificationEngine {
     return missingFields >= 2; // If 2 or more critical fields are missing
   }
 
-  private async freeCalendarSlot(userId: number, externalId: string): Promise<void> {
+  private async freeCalendarSlot(userId: string, externalId: string): Promise<void> {
     try {
       // Get Google Calendar integration
       const googleCalendarIntegration = await this.storage.getIntegration(userId, 'google_calendar');

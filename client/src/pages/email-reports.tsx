@@ -49,7 +49,7 @@ export default function EmailReports() {
       return [
         {
           id: 1,
-          userId: 1,
+          userId: "1",
           reportDate: new Date('2024-06-16'),
           totalMeetings: 15,
           qualifiedMeetings: 8,
@@ -60,7 +60,7 @@ export default function EmailReports() {
         },
         {
           id: 2,
-          userId: 1,
+          userId: "1",
           reportDate: new Date('2024-06-15'),
           totalMeetings: 12,
           qualifiedMeetings: 7,
@@ -71,7 +71,7 @@ export default function EmailReports() {
         },
         {
           id: 3,
-          userId: 1,
+          userId: "1",
           reportDate: new Date('2024-06-14'),
           totalMeetings: 18,
           qualifiedMeetings: 11,
@@ -84,7 +84,7 @@ export default function EmailReports() {
     },
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{ total: number; qualified: number; disqualified: number; needsReview: number }>({
     queryKey: ['/api/dashboard/stats'],
   });
 

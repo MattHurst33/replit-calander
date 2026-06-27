@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Clock, HelpCircle, RefreshCw, TrendingUp, AlertTriangle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, HelpCircle, RefreshCw, TrendingUp, AlertTriangle, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { InviteAcceptanceIndicator } from "@/components/invite-acceptance-indicator";
 import type { Meeting } from "@shared/schema";
@@ -68,10 +68,10 @@ export default function InviteTracking() {
 
   // Filter meetings to show only recent ones with invite data
   const recentMeetings = meetings?.filter(meeting => {
-    const meetingDate = new Date(meeting.dateTime);
+    const meetingDate = new Date(meeting.startTime);
     const now = new Date();
     const daysDiff = (now.getTime() - meetingDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysDiff <= 30; // Show meetings from last 30 days
+    return daysDiff <= 30;
   }).slice(0, 10) || [];
 
   // Get at-risk meetings (declined or pending for too long)
@@ -198,14 +198,14 @@ export default function InviteTracking() {
                   <div>
                     <p className="font-medium">{meeting.attendeeName}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(meeting.dateTime), "MMM d, yyyy 'at' h:mm a")}
+                      {format(new Date(meeting.startTime), "MMM d, yyyy 'at' h:mm a")}
                     </p>
                   </div>
                   <InviteAcceptanceIndicator
-                    inviteStatus={meeting.inviteStatus}
-                    inviteAccepted={meeting.inviteAccepted}
-                    inviteLastChecked={meeting.inviteLastChecked}
-                    attendeeResponses={meeting.attendeeResponses}
+                    inviteStatus={meeting.inviteStatus ?? undefined}
+                    inviteAccepted={meeting.inviteAccepted ?? undefined}
+                    inviteLastChecked={meeting.inviteLastChecked ?? undefined}
+                    attendeeResponses={(meeting.attendeeResponses as any) ?? undefined}
                   />
                 </div>
               ))}
@@ -240,24 +240,24 @@ export default function InviteTracking() {
                     <p className="font-medium">{meeting.attendeeName}</p>
                     <p className="text-sm text-muted-foreground">{meeting.company}</p>
                     <p className="text-sm text-muted-foreground">
-                      {format(new Date(meeting.dateTime), "MMM d, yyyy 'at' h:mm a")}
+                      {format(new Date(meeting.startTime), "MMM d, yyyy 'at' h:mm a")}
                     </p>
                   </div>
                   <div className="flex flex-col items-end space-y-2">
                     <Badge 
                       variant={
-                        meeting.qualificationStatus === 'qualified' ? 'default' : 
-                        meeting.qualificationStatus === 'disqualified' ? 'destructive' : 
+                        meeting.status === 'qualified' ? 'default' : 
+                        meeting.status === 'disqualified' ? 'destructive' : 
                         'secondary'
                       }
                     >
-                      {meeting.qualificationStatus}
+                      {meeting.status}
                     </Badge>
                     <InviteAcceptanceIndicator
-                      inviteStatus={meeting.inviteStatus}
-                      inviteAccepted={meeting.inviteAccepted}
-                      inviteLastChecked={meeting.inviteLastChecked}
-                      attendeeResponses={meeting.attendeeResponses}
+                      inviteStatus={meeting.inviteStatus ?? undefined}
+                      inviteAccepted={meeting.inviteAccepted ?? undefined}
+                      inviteLastChecked={meeting.inviteLastChecked ?? undefined}
+                      attendeeResponses={(meeting.attendeeResponses as any) ?? undefined}
                     />
                   </div>
                 </div>

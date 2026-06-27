@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ interface DashboardStats {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ['/api/dashboard/stats'],
@@ -159,7 +161,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle>Recent Meetings</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => setLocation('/settings')}>
                     <SettingsIcon size={16} />
                   </Button>
                 </div>
@@ -191,7 +193,7 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div className="mt-6 text-center">
-                    <Button variant="link" className="text-brand-600 hover:text-brand-700">
+                    <Button variant="link" className="text-brand-600 hover:text-brand-700" onClick={() => setLocation('/calendar-integration')}>
                       View all meetings →
                     </Button>
                   </div>
@@ -213,7 +215,7 @@ export default function Dashboard() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-between"
-                  onClick={() => {/* TODO: Navigate to manual qualification */}}
+                  onClick={() => setLocation('/qualification-rules')}
                 >
                   <div className="flex items-center space-x-3">
                     <UserCheck className="text-brand-500" size={16} />
@@ -224,7 +226,7 @@ export default function Dashboard() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-between"
-                  onClick={() => {/* TODO: Navigate to rules */}}
+                  onClick={() => setLocation('/qualification-rules')}
                 >
                   <div className="flex items-center space-x-3">
                     <SettingsIcon className="text-brand-500" size={16} />
@@ -253,7 +255,7 @@ export default function Dashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Active Rules</CardTitle>
-                <Button variant="link" size="sm" className="text-brand-600 hover:text-brand-700">
+                <Button variant="link" size="sm" className="text-brand-600 hover:text-brand-700" onClick={() => setLocation('/qualification-rules')}>
                   Manage
                 </Button>
               </div>

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 3000;
 
 console.log('🚀 Starting My Calendar App...');
 
@@ -22,21 +22,48 @@ app.use(express.static(publicPath));
 
 // API routes for development
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'My Calendar App is running!',
     timestamp: new Date().toISOString()
   });
 });
 
+const mockUser = {
+  id: 'demo-user-123',
+  name: 'Demo User',
+  email: 'demo@mycalendarapp.com',
+  firstName: 'Demo',
+  lastName: 'User',
+  profileImageUrl: null
+};
+
 app.get('/api/user', (req, res) => {
-  res.json({ 
-    user: { 
-      name: 'Demo User', 
-      email: 'demo@mycalendarapp.com',
-      id: 'demo-user-123'
-    }, 
-    isAuthenticated: true 
+  res.json({ user: mockUser, isAuthenticated: true });
+});
+
+// Required by useAuth hook — must return a user object for the dashboard to load
+app.get('/api/auth/user', (req, res) => {
+  res.json(mockUser);
+});
+
+app.get('/api/dashboard/stats', (req, res) => {
+  res.json({ total: 0, qualified: 0, disqualified: 0, needsReview: 0, integrations: { googleCalendar: false, calendly: false } });
+});
+
+app.get('/api/meetings', (req, res) => {
+  res.json([]);
+});
+
+app.get('/api/qualification-rules', (req, res) => {
+  res.json([]);
+});
+
+app.get('/api/calendar-integrations', (req, res) => {
+  res.json({
+    google: { connected: false, lastConnected: null },
+    outlook: { connected: false, lastConnected: null },
+    scanStats: { lastScan: null, connectedCalendars: [], totalMeetingsImported: 0 }
   });
 });
 

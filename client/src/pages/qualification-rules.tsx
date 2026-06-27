@@ -375,14 +375,14 @@ export default function QualificationRules() {
         </Card>
 
         {/* Inactive Rules */}
-        {rules?.filter(rule => !rule.isActive).length > 0 && (
+        {(rules?.filter(rule => !rule.isActive).length ?? 0) > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Inactive Rules</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {rules.filter(rule => !rule.isActive).map((rule) => (
+                {rules?.filter(rule => !rule.isActive).map((rule) => (
                   <div key={rule.id} className="flex items-center justify-between p-3 border border-gray-200 bg-gray-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{rule.name}</p>

@@ -37,6 +37,9 @@ export interface IStorage {
   updateUserSettings(userId: string, settings: Record<string, any>): Promise<User | undefined>;
   getUserSettings(userId: string): Promise<Record<string, any> | undefined>;
 
+  // User methods - extended
+  getAllUsers(): Promise<User[]>;
+
   // Integration methods
   getUserIntegrations(userId: string): Promise<Integration[]>;
   getIntegration(userId: string, type: string): Promise<Integration | undefined>;
@@ -51,6 +54,7 @@ export interface IStorage {
 
   // Meeting methods
   getUserMeetings(userId: string, limit?: number): Promise<Meeting[]>;
+  getMeetingById(id: number): Promise<Meeting | undefined>;
   getMeetingByExternalId(userId: string, externalId: string): Promise<Meeting | undefined>;
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   updateMeeting(id: number, updates: Partial<InsertMeeting>): Promise<Meeting | undefined>;
@@ -123,6 +127,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async updateUserSettings(userId: string, settings: Record<string, any>): Promise<User | undefined> {
@@ -210,6 +218,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(meetings.userId, userId))
       .orderBy(meetings.startTime)
       .limit(limit);
+  }
+
+  async getMeetingById(id: number): Promise<Meeting | undefined> {
+    const [meeting] = await db.select().from(meetings).where(eq(meetings.id, id));
+    return meeting || undefined;
   }
 
   async getMeetingByExternalId(userId: string, externalId: string): Promise<Meeting | undefined> {
@@ -488,6 +501,35 @@ export class DatabaseStorage implements IStorage {
       .delete(emailTemplates)
       .where(eq(emailTemplates.id, id));
     return result.rowCount ? result.rowCount > 0 : false;
+  }
+
+  // Grooming metrics methods
+  async getUserGroomingMetrics(userId: string, weekStart?: Date): Promise<GroomingMetrics | undefined> {
+    let query = db.select().from(groomingMetrics).where(eq(groomingMetrics.userId, userId));
+    if (weekStart) {
+      const [metric] = await db.select().from(groomingMetrics)
+        .where(and(eq(groomingMetrics.userId, userId), gte(groomingMetrics.weekStart, weekStart)));
+      return metric || undefined;
+    }
+    const results = await query.orderBy(groomingMetrics.weekStart).limit(1);
+    return results[0] || undefined;
+  }
+
+  async getHistoricalGroomingMetrics(userId: string, weeks = 12): Promise<GroomingMetrics[]> {
+    return await db.select().from(groomingMetrics)
+      .where(eq(groomingMetrics.userId, userId))
+      .orderBy(groomingMetrics.weekStart)
+      .limit(weeks);
+  }
+
+  async createGroomingMetrics(metrics: InsertGroomingMetrics): Promise<GroomingMetrics> {
+    const [newMetrics] = await db.insert(groomingMetrics).values(metrics).returning();
+    return newMetrics;
+  }
+
+  async updateGroomingMetrics(id: number, updates: Partial<InsertGroomingMetrics>): Promise<GroomingMetrics | undefined> {
+    const [updated] = await db.update(groomingMetrics).set(updates).where(eq(groomingMetrics.id, id)).returning();
+    return updated || undefined;
   }
 }
 

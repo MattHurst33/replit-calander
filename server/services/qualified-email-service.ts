@@ -75,7 +75,7 @@ export class QualifiedEmailService {
         minute: '2-digit',
         timeZoneName: 'short'
       }),
-      meeting_link: meeting.meetingUrl || "Calendar invite will include the link",
+      meeting_link: meeting.description || "Calendar invite will include the link",
       your_name: "Your Sales Rep", // Could be pulled from user settings
       pain_point_1: this.extractPainPoint(formData, 0),
       pain_point_2: this.extractPainPoint(formData, 1),

@@ -18,7 +18,7 @@ export class CalendlyService {
       attendeeEmail: payload.email,
       attendeeName: payload.name,
       status: 'pending',
-      formData: formData,
+      formData: formData as Record<string, any>,
     };
 
     // Extract qualification data from form responses

@@ -142,7 +142,7 @@ export class AutoRescheduleService {
         scheduledTime: new Date(),
         emailSent: false,
         success: false,
-        reason: error.message
+        reason: (error as Error).message
       };
     }
   }
@@ -338,7 +338,6 @@ ${attemptNumber >= 2 ?
             endTime: new Date(attemptData.scheduledTime.getTime() + 60 * 60 * 1000), // Add 1 hour
             status: 'pending' // Reset status to pending
           }),
-          updatedAt: new Date()
         })
         .where(eq(meetings.id, meetingId));
         
@@ -378,7 +377,7 @@ ${attemptNumber >= 2 ?
     try {
       const userMeetings = await storage.getUserMeetings(userId);
       
-      const meetingsWithReschedules = userMeetings.filter(m => m.autoRescheduleAttempts > 0);
+      const meetingsWithReschedules = userMeetings.filter(m => (m.autoRescheduleAttempts ?? 0) > 0);
       const totalAttempts = meetingsWithReschedules.reduce((sum, m) => sum + (m.autoRescheduleAttempts || 0), 0);
       const successfulReschedules = meetingsWithReschedules.filter(m => m.rescheduleEmailSent).length;
       

@@ -52,7 +52,7 @@ export class InviteTrackingService {
         .from(meetings)
         .where(
           and(
-            gte(meetings.dateTime, cutoffDate),
+            gte(meetings.startTime, cutoffDate),
             // Check meetings that haven't been checked recently or at all
             // or(
             //   isNull(meetings.inviteLastChecked),
@@ -140,8 +140,7 @@ export class InviteTrackingService {
           inviteAccepted: hasAcceptedAttendees,
           inviteStatus: inviteData.inviteStatus,
           inviteLastChecked: inviteData.lastChecked,
-          attendeeResponses: inviteData.attendeeResponses,
-          updatedAt: new Date()
+          attendeeResponses: inviteData.attendeeResponses
         })
         .where(eq(meetings.id, meetingId));
         

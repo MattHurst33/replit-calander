@@ -209,7 +209,7 @@ export class GroomingEfficiencyService {
         if (userMetrics.length > 0) {
           const totalTimeSaved = userMetrics.reduce((sum, m) => sum + m.timeSavedMinutes, 0);
           const totalMeetings = userMetrics.reduce((sum, m) => sum + m.totalMeetings, 0);
-          const avgAccuracy = userMetrics.reduce((sum, m) => sum + parseFloat(m.automationAccuracy), 0) / userMetrics.length;
+          const avgAccuracy = userMetrics.reduce((sum, m) => sum + parseFloat(m.automationAccuracy ?? "0"), 0) / userMetrics.length;
           
           teamMetrics.push({
             userId,

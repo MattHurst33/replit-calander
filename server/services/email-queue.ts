@@ -95,7 +95,7 @@ export class EmailQueueService {
     }
   }
 
-  async scheduleConfirmationEmail(userId: number, meetingId: number) {
+  async scheduleConfirmationEmail(userId: string, meetingId: number) {
     return await storage.createEmailJob({
       userId,
       meetingId,
@@ -106,7 +106,7 @@ export class EmailQueueService {
     });
   }
 
-  async scheduleReminderEmail(userId: number, meetingId: number, meetingDate: Date) {
+  async scheduleReminderEmail(userId: string, meetingId: number, meetingDate: Date) {
     const reminderTime = new Date(meetingDate);
     reminderTime.setHours(reminderTime.getHours() - 24); // 24 hours before
 
@@ -120,7 +120,7 @@ export class EmailQueueService {
     });
   }
 
-  async scheduleFollowUpEmail(userId: number, meetingId: number, meetingDate: Date) {
+  async scheduleFollowUpEmail(userId: string, meetingId: number, meetingDate: Date) {
     const followUpTime = new Date(meetingDate);
     followUpTime.setHours(followUpTime.getHours() + 2); // 2 hours after
 

@@ -80,7 +80,7 @@ export class CalendarCleanupService {
         .where(
           and(
             eq(meetings.userId, userId),
-            eq(meetings.qualificationStatus, "disqualified"),
+            eq(meetings.status, "disqualified"),
             eq(meetings.calendarDeleted, false),
             eq(meetings.status, "scheduled") // Only delete scheduled meetings
           )
@@ -119,8 +119,7 @@ export class CalendarCleanupService {
         .set({
           calendarDeleted: true,
           deletedAt: new Date(),
-          status: "cancelled",
-          updatedAt: new Date()
+          status: "disqualified"
         })
         .where(eq(meetings.id, meeting.id));
 
@@ -165,7 +164,7 @@ export class CalendarCleanupService {
         .where(
           and(
             eq(meetings.userId, userId),
-            eq(meetings.qualificationStatus, "disqualified"),
+            eq(meetings.status, "disqualified"),
             eq(meetings.calendarDeleted, false),
             eq(meetings.status, "scheduled")
           )
@@ -200,7 +199,7 @@ export class CalendarCleanupService {
         .where(
           and(
             eq(meetings.userId, userId),
-            eq(meetings.qualificationStatus, "disqualified")
+            eq(meetings.status, "disqualified")
           )
         );
 

@@ -222,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         includeCurrentSolutions: updates.includeCurrentSolutions
       };
       
-      await storage.updateUserSettings(MOCK_USER_ID, newSettings);
+      await storage.updateUserSettings(userId, newSettings);
       
       res.json({ success: true, settings: newSettings });
     } catch (error) {
@@ -231,9 +231,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get meetings
-  app.get("/api/meetings", async (req, res) => {
+  app.get("/api/meetings", isAuthenticated, async (req: any, res) => {
     try {
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 20);
+      const userId = req.user.claims.sub;
+      const meetings = await storage.getUserMeetings(userId, 20);
       res.json(meetings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch meetings" });
@@ -241,33 +242,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update meeting status
-  app.patch("/api/meetings/:id", async (req, res) => {
+  app.patch("/api/meetings/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { id } = req.params;
       const { status, qualificationReason } = req.body;
-      
+
       // Get meeting details before updating
-      const meetings = await storage.getUserMeetings(MOCK_USER_ID, 1000);
+      const meetings = await storage.getUserMeetings(userId, 1000);
       const meeting = meetings.find(m => m.id === parseInt(id));
-      
+
       if (!meeting) {
         return res.status(404).json({ message: "Meeting not found" });
       }
-      
+
       const updated = await storage.updateMeeting(parseInt(id), {
         status,
         qualificationReason,
         lastProcessed: new Date(),
       });
-      
+
       // If meeting is being disqualified, check if calendar slot freeing is enabled
       if (status === 'disqualified' && meeting.externalId) {
         try {
-          const userSettings = await storage.getUserSettings(MOCK_USER_ID);
+          const userSettings = await storage.getUserSettings(userId);
           const autoFreeCalendarSlots = userSettings?.autoFreeCalendarSlots ?? true;
-          
+
           if (autoFreeCalendarSlots) {
-            const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
+            const googleCalendarIntegration = await storage.getIntegration(userId, 'google_calendar');
             
             if (googleCalendarIntegration && googleCalendarIntegration.accessToken) {
               let eventId = meeting.externalId;
@@ -430,18 +432,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Calendly webhook
-  app.post("/api/webhooks/calendly", async (req, res) => {
+  app.post("/api/webhooks/calendly", async (req: any, res) => {
     try {
       const { event, payload } = req.body;
-      
+
       if (event === 'invitee.created') {
-        // Extract form data and create meeting
         const formData = payload.questions_and_answers || [];
         const meetingData = calendly.extractMeetingData(payload, formData);
-        
+        const userId = req.user?.claims?.sub || payload.tracking?.utm_content || 'unknown';
+
         const meeting = await storage.createMeeting({
           ...meetingData,
-          userId: req.user.claims.sub,
+          userId,
         });
         
         // Run qualification
@@ -589,8 +591,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Meeting has no external calendar ID" });
       }
 
-      const googleCalendarIntegration = await storage.getIntegration(MOCK_USER_ID, 'google_calendar');
-      
+      const googleCalendarIntegration = await storage.getIntegration(userId, 'google_calendar');
+
       if (!googleCalendarIntegration || !googleCalendarIntegration.accessToken) {
         return res.status(400).json({ message: "Google Calendar not connected" });
       }
@@ -626,44 +628,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Failed to free calendar slot:', error);
       res.status(500).json({ message: "Failed to free calendar slot" });
-    }
-  });
-
-  // Get no-show analytics
-  app.get("/api/analytics/no-shows", async (req, res) => {
-    try {
-      const { startDate, endDate } = req.query;
-      const analytics = await storage.getNoShowAnalytics(
-        MOCK_USER_ID,
-        startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined
-      );
-      res.json(analytics);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch no-show analytics" });
-    }
-  });
-
-  // Mark meeting as no-show
-  app.post("/api/meetings/:id/no-show", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { reason } = req.body;
-      
-      const updated = await storage.updateMeeting(parseInt(id), {
-        status: 'no_show',
-        noShowMarkedAt: new Date(),
-        noShowReason: reason || 'did_not_attend',
-        lastProcessed: new Date(),
-      });
-      
-      if (!updated) {
-        return res.status(404).json({ message: "Meeting not found" });
-      }
-      
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to mark meeting as no-show" });
     }
   });
 

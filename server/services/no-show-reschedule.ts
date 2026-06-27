@@ -73,14 +73,8 @@ export class NoShowRescheduleService {
         }
 
         // Only send reschedule emails for qualified meetings
-        if (meeting.qualificationResult) {
-          const qualResult = typeof meeting.qualificationResult === 'string' 
-            ? JSON.parse(meeting.qualificationResult) 
-            : meeting.qualificationResult;
-          
-          if (qualResult.finalStatus !== 'qualified') {
-            return false;
-          }
+        if (meeting.status !== 'no_show') {
+          return false;
         }
 
         // Check if no-show was marked within the last 24 hours
@@ -116,14 +110,7 @@ export class NoShowRescheduleService {
       // Generate personalized email content
       const emailContent = this.generateRescheduleEmailContent(meeting, emailTemplate, userSettings);
       
-      // Send the email via Gmail
-      await this.gmailService.sendRescheduleEmail(
-        gmailIntegration.accessToken,
-        meeting.attendeeEmail,
-        emailContent.subject,
-        emailContent.html,
-        emailContent.text
-      );
+      await this.gmailService.sendFollowUpEmail(gmailIntegration.accessToken, meeting);
 
       // Mark the meeting as having received a reschedule email
       await storage.updateMeeting(meeting.id, {
@@ -131,33 +118,27 @@ export class NoShowRescheduleService {
         lastProcessed: new Date()
       });
 
-      // Create email job record
       await storage.createEmailJob({
         userId,
         meetingId: meeting.id,
-        jobType: 'no_show_reschedule',
+        type: 'no_show_reschedule',
         status: 'sent',
         scheduledAt: new Date(),
-        emailContent: emailContent.html,
-        recipientEmail: meeting.attendeeEmail,
-        subject: emailContent.subject
+        retryCount: 0,
       });
 
       console.log(`Reschedule email sent to ${meeting.attendeeEmail} for meeting: ${meeting.title}`);
     } catch (error) {
       console.error(`Failed to send reschedule email for meeting ${meeting.id}:`, error);
-      
-      // Create failed email job record
+
       await storage.createEmailJob({
         userId,
         meetingId: meeting.id,
-        jobType: 'no_show_reschedule',
+        type: 'no_show_reschedule',
         status: 'failed',
         scheduledAt: new Date(),
-        emailContent: `Failed to send reschedule email`,
-        recipientEmail: meeting.attendeeEmail,
-        subject: 'Reschedule Email Failed',
-        errorMessage: error.message
+        retryCount: 0,
+        errorMessage: (error as Error).message,
       });
     }
   }
@@ -165,7 +146,7 @@ export class NoShowRescheduleService {
   private async getRescheduleEmailTemplate(userId: string, userSettings: any) {
     // Try to get user's custom reschedule template
     const templates = await storage.getUserEmailTemplates(userId);
-    const rescheduleTemplate = templates.find(t => t.templateType === 'no_show_reschedule' && t.isActive);
+    const rescheduleTemplate = templates.find(t => t.type === 'no_show_reschedule' && t.isActive);
     
     if (rescheduleTemplate) {
       return rescheduleTemplate;

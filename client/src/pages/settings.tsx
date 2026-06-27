@@ -112,7 +112,7 @@ export default function Settings() {
     syncInterval: "15",
     qualificationMode: "automatic",
     calendarColorCoding: true,
-    autoFreeCalendarSlots: userSettings?.autoFreeCalendarSlots ?? true,
+    autoFreeCalendarSlots: (userSettings as any)?.autoFreeCalendarSlots ?? true,
     autoArchive: true,
     archiveAfterDays: "90",
   });

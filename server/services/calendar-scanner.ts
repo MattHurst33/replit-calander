@@ -111,11 +111,9 @@ export class CalendarScannerService {
     };
 
     try {
-      // Check user's integrations
       const googleIntegration = await storage.getIntegration(userId, 'google_calendar');
-      const outlookIntegration = await storage.getIntegration(userId, 'outlook_calendar');
+      const outlookIntegrationRecord = await storage.getIntegration(userId, 'outlook_calendar');
 
-      // Scan Google Calendar if connected
       if (googleIntegration) {
         try {
           results.google = await googleCalendarIntegration.scanAndImportMeetings(userId);
@@ -124,8 +122,7 @@ export class CalendarScannerService {
         }
       }
 
-      // Scan Outlook Calendar if connected
-      if (outlookIntegration) {
+      if (outlookIntegrationRecord) {
         try {
           results.outlook = await outlookIntegration.scanAndImportMeetings(userId);
         } catch (error) {
