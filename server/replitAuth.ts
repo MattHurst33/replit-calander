@@ -8,9 +8,10 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+// When REPLIT_DOMAINS is not set, run in local dev mode (no Replit auth required)
+const isLocalDev = !process.env.REPLIT_DOMAINS;
+
+const LOCAL_DEV_USER_ID = 'local-dev-user-123';
 
 const getOidcConfig = memoize(
   async () => {
@@ -24,6 +25,21 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+  if (isLocalDev) {
+    // Use simple in-memory session store for local development
+    return session({
+      secret: process.env.SESSION_SECRET || 'local-dev-secret-change-in-production',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: false,
+        maxAge: sessionTtl,
+      },
+    });
+  }
+
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -72,6 +88,30 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  if (isLocalDev) {
+    console.log('[Auth] Local dev mode — Replit auth bypassed. Auto-authenticating as local-dev-user-123');
+
+    // Ensure the local dev user exists in the database
+    try {
+      await storage.upsertUser({
+        id: LOCAL_DEV_USER_ID,
+        email: 'dev@localhost.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        profileImageUrl: null,
+      });
+    } catch (err) {
+      console.warn('[Auth] Could not upsert local dev user (DB may not be ready):', err);
+    }
+
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
+    app.get("/api/login", (_req, res) => res.redirect('/'));
+    app.get("/api/logout", (_req, res) => res.redirect('/'));
+    return;
+  }
+
   const config = await getOidcConfig();
 
   const verify: VerifyFunction = async (
@@ -84,8 +124,7 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -128,6 +167,22 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // In local dev mode, auto-authenticate every request as the local dev user
+  if (isLocalDev) {
+    (req as any).user = {
+      claims: {
+        sub: LOCAL_DEV_USER_ID,
+        email: 'dev@localhost.com',
+        first_name: 'Dev',
+        last_name: 'User',
+      },
+      expires_at: Math.floor(Date.now() / 1000) + 86400,
+      access_token: 'local-dev-token',
+      refresh_token: null,
+    };
+    return next();
+  }
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {

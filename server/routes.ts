@@ -781,6 +781,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google Calendar OAuth flow
   app.get("/api/auth/google/calendar", isAuthenticated, async (req: any, res) => {
     try {
+      const clientId = process.env.GOOGLE_CLIENT_ID;
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+      if (!clientId || clientId === 'your_google_client_id_here' || !clientSecret || clientSecret === 'your_google_client_secret_here') {
+        return res.status(503).json({
+          message: "Google Calendar is not configured yet. To enable it, create a Google OAuth app at console.cloud.google.com and add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your .env file, then restart the server."
+        });
+      }
       const userId = req.user.claims.sub;
       const authUrl = googleCalendarIntegration.getAuthUrl(userId);
       res.json({ authUrl });
@@ -812,6 +819,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Outlook Calendar OAuth flow
   app.get("/api/auth/outlook/calendar", isAuthenticated, async (req: any, res) => {
     try {
+      const clientId = process.env.MICROSOFT_CLIENT_ID;
+      const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+      if (!clientId || clientId === 'your_microsoft_client_id_here' || !clientSecret || clientSecret === 'your_microsoft_client_secret_here') {
+        return res.status(503).json({
+          message: "Outlook Calendar is not configured yet. To enable it, register an app at portal.azure.com and add MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET to your .env file, then restart the server."
+        });
+      }
       const userId = req.user.claims.sub;
       const authUrl = outlookIntegration.getAuthUrl(userId);
       res.json({ authUrl });

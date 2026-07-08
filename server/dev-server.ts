@@ -1,4 +1,5 @@
 // Simple development server for My Calendar App
+import 'dotenv/config';
 import express from "express";
 import path from "path";
 import { fileURLToPath } from 'url';
@@ -65,6 +66,42 @@ app.get('/api/calendar-integrations', (req, res) => {
     outlook: { connected: false, lastConnected: null },
     scanStats: { lastScan: null, connectedCalendars: [], totalMeetingsImported: 0 }
   });
+});
+
+// Google Calendar OAuth initiation
+app.get('/api/auth/google/calendar', (_req, res) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || clientId === 'your_google_client_id_here' || !clientSecret || clientSecret === 'your_google_client_secret_here') {
+    return res.status(503).json({
+      message: "Google Calendar is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your .env file and restart the server."
+    });
+  }
+  res.status(501).json({ message: "Run 'npm run dev' (not dev:simple) to use real OAuth." });
+});
+
+// Outlook Calendar OAuth initiation
+app.get('/api/auth/outlook/calendar', (_req, res) => {
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+  if (!clientId || clientId === 'your_microsoft_client_id_here' || !clientSecret || clientSecret === 'your_microsoft_client_secret_here') {
+    return res.status(503).json({
+      message: "Outlook Calendar is not configured yet. Add MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET to your .env file and restart the server."
+    });
+  }
+  res.status(501).json({ message: "Run 'npm run dev' (not dev:simple) to use real OAuth." });
+});
+
+app.post('/api/scan-calendars', (_req, res) => {
+  res.json({ success: false, message: "Calendar scanning requires the full server. Run 'npm run dev' instead of 'npm run dev:simple'." });
+});
+
+app.delete('/api/calendar-integrations/:type', (_req, res) => {
+  res.json({ success: true, message: "Integration disconnected (stub)." });
+});
+
+app.post('/api/sync/calendar', (_req, res) => {
+  res.json({ success: false, synced: 0, message: "Calendar sync requires the full server. Run 'npm run dev'." });
 });
 
 // Catch-all handler: send back React's index.html file for SPA routing
