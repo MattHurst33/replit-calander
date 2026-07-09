@@ -111,3 +111,4 @@ Claude Sonnet 5 (claude-sonnet-5)
 ## Change Log
 
 - 2026-07-08 — Implemented Story 1.2: `companyCache.productsServices` column, extended the existing OpenAI research call to fetch it (no new external-call boundary), display join + UI with an explicit "not available" state. Found and fixed a drizzle-zod jsonb-array typing gap not anticipated by the story's Task 1 (documented in Debug Log for future jsonb-array stories).
+- 2026-07-08 — Code review of the full session diff found 2 bugs, both in the shared pipeline code this story builds on rather than in this story's own added lines (a `upsertCompanyCache` race condition exposed by Story 1.1's concurrency fix, and an `extractCompanyFromText` regression on hyphen/colon-separated titles) — fixed and logged in Story 1.1's Change Log, since that's where the affected code lives. `npm run check` (0 errors) and `npm run test` (19/19) re-verified after the fixes; this story's own `productsServices` feature was unaffected.

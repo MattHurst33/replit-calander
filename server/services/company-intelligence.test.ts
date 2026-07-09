@@ -44,6 +44,14 @@ describe("extractCompanyFromText", () => {
     expect(extractCompanyFromText("Initech Demo", null)).toBe("Initech");
   });
 
+  it("matches a hyphen-separated '<Company> - <keyword>' pattern", () => {
+    expect(extractCompanyFromText("Acme Corp - Demo", null)).toBe("Acme Corp");
+  });
+
+  it("matches a colon-attached '<Company>: <keyword>' pattern without leaking the colon", () => {
+    expect(extractCompanyFromText("Initech: Demo", null)).toBe("Initech");
+  });
+
   it("returns null when no pattern matches", () => {
     expect(extractCompanyFromText("weekly sync", "just us")).toBeNull();
   });

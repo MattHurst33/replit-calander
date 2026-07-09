@@ -580,8 +580,25 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updated;
     }
-    const [created] = await db.insert(companyCache).values(entry).returning();
-    return created;
+    try {
+      const [created] = await db.insert(companyCache).values(entry).returning();
+      return created;
+    } catch (err) {
+      // The lookup above and this insert aren't atomic, so a concurrent upsert for the same
+      // (companyName, domain) — e.g. two meetings imported in the same scan batch resolving to
+      // the same company — can win the race and violate the unique index here. Re-check rather
+      // than surfacing the raw duplicate-key error: if another call just created the row, update
+      // it instead of letting the caller (CompanyIntelligenceService.enrich) mistake this for a
+      // research failure.
+      const racedExisting = await this.getCompanyCache(entry.companyName, entry.domain ?? null);
+      if (!racedExisting) throw err;
+      const [updated] = await db
+        .update(companyCache)
+        .set(entry)
+        .where(eq(companyCache.id, racedExisting.id))
+        .returning();
+      return updated;
+    }
   }
 
   async updateCompanyCache(id: number, updates: Partial<InsertCompanyCache>): Promise<CompanyCache | undefined> {

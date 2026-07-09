@@ -42,8 +42,24 @@ export function extractCompanyFromText(title: string, description: string | null
   const words = title.trim().split(/\s+/).filter(Boolean);
   for (let i = 1; i <= Math.min(4, words.length - 1); i++) {
     const keyword = words[i].replace(/[^\w]/g, "").toLowerCase();
-    if (MEETING_KEYWORDS.has(keyword) && words.slice(0, i).every((w) => /^[A-Z]/.test(w))) {
-      return words.slice(0, i).join(" ");
+    if (!MEETING_KEYWORDS.has(keyword)) continue;
+
+    // A separator ("-", "–", ":") between the company name and the keyword — e.g. "Acme Corp - Demo",
+    // "Initech: Demo" — can show up either as its own token or attached to the preceding word. Drop a
+    // standalone separator token, then strip trailing punctuation from the last candidate word, before
+    // checking capitalization — otherwise a lone "-" fails the uppercase check (losing the match
+    // entirely) and a trailing ":" pollutes the returned company name.
+    let candidateWords = words.slice(0, i);
+    if (candidateWords.length > 1 && /^[-–:]$/.test(candidateWords[candidateWords.length - 1])) {
+      candidateWords = candidateWords.slice(0, -1);
+    }
+    if (candidateWords.length === 0) continue;
+
+    const cleanedWords = candidateWords.map((w, idx) =>
+      idx === candidateWords.length - 1 ? w.replace(/[-–:,.]+$/, "") : w,
+    );
+    if (cleanedWords.length > 0 && cleanedWords.every((w) => /^[A-Z]/.test(w))) {
+      return cleanedWords.join(" ");
     }
   }
 
