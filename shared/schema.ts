@@ -100,6 +100,7 @@ export const companyCache = pgTable(
     employeeCount: integer("employee_count"),
     headquarters: text("headquarters"),
     foundingYear: integer("founding_year"),
+    productsServices: jsonb("products_services").$type<string[]>(), // top 3-5 product/service names, or [] if not confidently known (FR-2.3, Story 1.2)
     source: text("source").notNull(), // which data source produced this record, e.g. 'openai'
     researchedAt: timestamp("researched_at").notNull(), // drives the 24h stale-while-revalidate check
     refreshQueuedAt: timestamp("refresh_queued_at"), // prevents duplicate concurrent background refreshes
@@ -249,7 +250,12 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
   createdAt: true,
 });
 
-export const insertCompanyCacheSchema = createInsertSchema(companyCache).omit({
+export const insertCompanyCacheSchema = createInsertSchema(companyCache, {
+  // drizzle-zod maps jsonb columns to a generic recursive Json schema by default, which doesn't
+  // match this column's `.$type<string[]>()` — override explicitly so InsertCompanyCache lines up
+  // with what Drizzle's own insert/update types expect for this column.
+  productsServices: z.array(z.string()).nullable().optional(),
+}).omit({
   id: true,
   createdAt: true,
 });

@@ -544,21 +544,27 @@ export class DatabaseStorage implements IStorage {
   // Company cache methods (AD-3, AD-9)
   // NOTE: domain is nullable and Postgres unique indexes do not treat NULL as equal to NULL,
   // so lookups/upserts are done manually here rather than relying on an ON CONFLICT target.
+  // Matching is case-insensitive: companyName is meant to be normalized (lowercased/trimmed)
+  // going in, but the title/description extraction heuristic can't guarantee consistent casing
+  // across different meetings for the same real company — case-insensitive lookup keeps those
+  // from creating duplicate cache rows instead of finding/updating the existing one.
   async getCompanyCache(companyName: string, domain: string | null): Promise<CompanyCache | undefined> {
+    const normalizedName = companyName.trim().toLowerCase();
     const domainCondition = domain === null ? isNull(companyCache.domain) : eq(companyCache.domain, domain);
     const [entry] = await db
       .select()
       .from(companyCache)
-      .where(and(eq(companyCache.companyName, companyName), domainCondition));
+      .where(and(sql`lower(${companyCache.companyName}) = ${normalizedName}`, domainCondition));
     return entry || undefined;
   }
 
   async getCompanyCacheByName(companyName: string): Promise<CompanyCache | undefined> {
     // Best-effort join for display purposes when the meeting's resolved domain isn't tracked on the meeting row.
+    const normalizedName = companyName.trim().toLowerCase();
     const [entry] = await db
       .select()
       .from(companyCache)
-      .where(eq(companyCache.companyName, companyName))
+      .where(sql`lower(${companyCache.companyName}) = ${normalizedName}`)
       .orderBy(sql`${companyCache.researchedAt} desc`)
       .limit(1);
     return entry || undefined;

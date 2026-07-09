@@ -5,11 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import type { Meeting } from "@shared/schema";
 
-// GET /api/meetings embeds these company-snapshot fields (from companyCache) alongside the base Meeting row (FR-2.2)
+// GET /api/meetings embeds these company-snapshot fields (from companyCache) alongside the base Meeting row (FR-2.2, FR-2.3)
 type MeetingWithCompany = Meeting & {
   companyOverview?: string | null;
   companyHeadquarters?: string | null;
   companyFoundingYear?: number | null;
+  companyProductsServices?: string[] | null;
 };
 
 interface MeetingCardProps {
@@ -227,6 +228,13 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
               {meeting.companyHeadquarters && <span>{meeting.companyHeadquarters}</span>}
               {meeting.companyHeadquarters && meeting.companyFoundingYear && <span> · </span>}
               {meeting.companyFoundingYear && <span>Founded {meeting.companyFoundingYear}</span>}
+            </p>
+          )}
+          {meeting.companyOverview && (
+            <p className="text-xs text-slate-500 mt-1">
+              Products/services: {meeting.companyProductsServices && meeting.companyProductsServices.length > 0
+                ? meeting.companyProductsServices.join(", ")
+                : "Not available"}
             </p>
           )}
           {meeting.qualificationReason && (

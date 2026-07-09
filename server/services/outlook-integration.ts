@@ -2,6 +2,22 @@ import axios from 'axios';
 import { storage } from "../storage";
 import { QualificationEngine } from "./qualification-engine";
 import { companyIntelligenceService } from "./company-intelligence";
+import type { Meeting } from "@shared/schema";
+
+// Company research can take up to RESEARCH_TIMEOUT_MS (30s) per meeting; running it sequentially
+// for every newly-imported event would make one scan take minutes. Bounded concurrency keeps
+// per-meeting enrich-before-qualify ordering (AD-8, AD-11) while researching several at once.
+const ENRICH_CONCURRENCY = 5;
+
+async function runWithConcurrency<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let index = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      await worker(items[index++]);
+    }
+  });
+  await Promise.all(runners);
+}
 
 export class OutlookIntegration {
   private qualificationEngine: QualificationEngine;
@@ -114,6 +130,7 @@ export class OutlookIntegration {
       const events = response.data.value || [];
       let imported = 0;
       let processed = 0;
+      const createdMeetings: Meeting[] = [];
 
       for (const event of events) {
         // Skip non-meeting events
@@ -128,17 +145,21 @@ export class OutlookIntegration {
 
         // Extract meeting details
         const meetingData = this.extractMeetingData(event, userId);
-        
+
         // Create meeting record
         const meeting = await storage.createMeeting(meetingData);
         imported++;
+        createdMeetings.push(meeting);
+      }
 
-        // Research the company before qualifying (AD-8, AD-11: enrich must resolve before qualify runs)
+      // Research + qualify newly imported meetings with bounded concurrency. Enrich still fully
+      // resolves before qualify runs for each individual meeting (AD-8, AD-11).
+      await runWithConcurrency(createdMeetings, ENRICH_CONCURRENCY, async (meeting) => {
         const enrichResult = await companyIntelligenceService.enrich(meeting);
         if (enrichResult.status !== "completed") {
           // Unresolved company or research timeout — do not qualify against incomplete data (AD-11)
           processed++;
-          continue;
+          return;
         }
 
         // Run AI qualification on the meeting
@@ -148,7 +169,7 @@ export class OutlookIntegration {
         } catch (qualificationError) {
           console.error(`Failed to qualify meeting ${meeting.id}:`, qualificationError);
         }
-      }
+      });
 
       console.log(`Outlook Calendar scan completed for user ${userId}: ${imported} imported, ${processed} processed`);
       return { imported, processed };

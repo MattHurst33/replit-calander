@@ -247,6 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             companyOverview: cache.overview,
             companyHeadquarters: cache.headquarters,
             companyFoundingYear: cache.foundingYear,
+            companyProductsServices: cache.productsServices,
           };
         }),
       );
