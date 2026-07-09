@@ -4,7 +4,7 @@ baseline_commit: 30f7586325c1e1031b4f7128c005e326e67de4fb
 
 # Story 1.2: Products & Services Summary
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
