@@ -5,8 +5,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import type { Meeting } from "@shared/schema";
 
+// GET /api/meetings embeds these company-snapshot fields (from companyCache) alongside the base Meeting row (FR-2.2)
+type MeetingWithCompany = Meeting & {
+  companyOverview?: string | null;
+  companyHeadquarters?: string | null;
+  companyFoundingYear?: number | null;
+};
+
 interface MeetingCardProps {
-  meeting: Meeting;
+  meeting: MeetingWithCompany;
   onUpdate?: (id: number, status: string) => void;
 }
 
@@ -205,7 +212,23 @@ export default function MeetingCard({ meeting, onUpdate }: MeetingCardProps) {
                 Company: {meeting.companySize} employees
               </span>
             )}
+            {meeting.companyResearchStatus === 'unresolved' && (
+              <span className="text-xs text-amber-600">Company not identified</span>
+            )}
+            {meeting.companyResearchStatus === 'timeout' && (
+              <span className="text-xs text-amber-600">Company research timed out</span>
+            )}
           </div>
+          {meeting.companyOverview && (
+            <p className="text-xs text-slate-600 mt-1">{meeting.companyOverview}</p>
+          )}
+          {(meeting.companyHeadquarters || meeting.companyFoundingYear) && (
+            <p className="text-xs text-slate-500 mt-1">
+              {meeting.companyHeadquarters && <span>{meeting.companyHeadquarters}</span>}
+              {meeting.companyHeadquarters && meeting.companyFoundingYear && <span> · </span>}
+              {meeting.companyFoundingYear && <span>Founded {meeting.companyFoundingYear}</span>}
+            </p>
+          )}
           {meeting.qualificationReason && (
             <p className="text-xs text-slate-500 mt-1">
               {meeting.qualificationReason}

@@ -49,7 +49,7 @@ story_location: '{project-root}/_bmad-output/implementation-artifacts'
 
 development_status:
   epic-1: in-progress
-  1-1-foundational-company-overview-lookup: ready-for-dev
+  1-1-foundational-company-overview-lookup: review
   1-2-products-services-summary: backlog
   1-3-recent-news-signals: backlog
   1-4-key-contacts-lookup: backlog

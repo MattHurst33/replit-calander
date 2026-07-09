@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb, decimal, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, boolean, timestamp, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -82,8 +82,31 @@ export const meetings = pgTable("meetings", {
   rescheduleEmailSent: boolean("reschedule_email_sent").default(false),
   originalMeetingTime: timestamp("original_meeting_time"), // Store original time for tracking
   lastProcessed: timestamp("last_processed"),
+  companyResearchStatus: text("company_research_status"), // 'unresolved', 'timeout', 'completed' — see companyCache; independent of qualification `status`
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Company research cache — keyed by normalized (companyName, domain). AD-9: 24h TTL, stale-while-revalidate.
+// Story 1.1 owns overview fields; Stories 1.2-1.6 each add one field to this same record (see Dev Notes in story file).
+export const companyCache = pgTable(
+  "company_cache",
+  {
+    id: serial("id").primaryKey(),
+    companyName: text("company_name").notNull(), // normalized: lowercased, trimmed
+    domain: text("domain"), // normalized; null when resolved via title/description rather than email domain
+    overview: text("overview"),
+    industry: text("industry"),
+    revenueRange: text("revenue_range"), // human-readable, e.g. "$10M-$50M" — meetings.revenue stores a numeric point-estimate derived from this
+    employeeCount: integer("employee_count"),
+    headquarters: text("headquarters"),
+    foundingYear: integer("founding_year"),
+    source: text("source").notNull(), // which data source produced this record, e.g. 'openai'
+    researchedAt: timestamp("researched_at").notNull(), // drives the 24h stale-while-revalidate check
+    refreshQueuedAt: timestamp("refresh_queued_at"), // prevents duplicate concurrent background refreshes
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("IDX_company_cache_name_domain").on(table.companyName, table.domain)],
+);
 
 export const emailReports = pgTable("email_reports", {
   id: serial("id").primaryKey(),
@@ -226,6 +249,11 @@ export const insertMeetingSchema = createInsertSchema(meetings).omit({
   createdAt: true,
 });
 
+export const insertCompanyCacheSchema = createInsertSchema(companyCache).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertEmailReportSchema = createInsertSchema(emailReports).omit({
   id: true,
   createdAt: true,
@@ -256,6 +284,9 @@ export type InsertQualificationRule = z.infer<typeof insertQualificationRuleSche
 
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
+
+export type CompanyCache = typeof companyCache.$inferSelect;
+export type InsertCompanyCache = z.infer<typeof insertCompanyCacheSchema>;
 
 export type EmailReport = typeof emailReports.$inferSelect;
 export type InsertEmailReport = z.infer<typeof insertEmailReportSchema>;

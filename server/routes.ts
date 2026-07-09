@@ -235,7 +235,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const meetings = await storage.getUserMeetings(userId, 20);
-      res.json(meetings);
+
+      // Embed company snapshot fields not already stored on the meeting row (FR-2.2)
+      const meetingsWithCompany = await Promise.all(
+        meetings.map(async (meeting) => {
+          if (!meeting.company) return meeting;
+          const cache = await storage.getCompanyCacheByName(meeting.company);
+          if (!cache) return meeting;
+          return {
+            ...meeting,
+            companyOverview: cache.overview,
+            companyHeadquarters: cache.headquarters,
+            companyFoundingYear: cache.foundingYear,
+          };
+        }),
+      );
+
+      res.json(meetingsWithCompany);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch meetings" });
     }

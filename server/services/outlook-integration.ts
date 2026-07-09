@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { storage } from "../storage";
 import { QualificationEngine } from "./qualification-engine";
+import { companyIntelligenceService } from "./company-intelligence";
 
 export class OutlookIntegration {
   private qualificationEngine: QualificationEngine;
@@ -131,6 +132,14 @@ export class OutlookIntegration {
         // Create meeting record
         const meeting = await storage.createMeeting(meetingData);
         imported++;
+
+        // Research the company before qualifying (AD-8, AD-11: enrich must resolve before qualify runs)
+        const enrichResult = await companyIntelligenceService.enrich(meeting);
+        if (enrichResult.status !== "completed") {
+          // Unresolved company or research timeout — do not qualify against incomplete data (AD-11)
+          processed++;
+          continue;
+        }
 
         // Run AI qualification on the meeting
         try {

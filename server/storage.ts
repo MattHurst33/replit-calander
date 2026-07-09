@@ -7,6 +7,7 @@ import {
   emailJobs,
   emailTemplates,
   groomingMetrics,
+  companyCache,
   type User,
   type UpsertUser,
   type Integration,
@@ -23,9 +24,11 @@ import {
   type InsertEmailTemplate,
   type GroomingMetrics,
   type InsertGroomingMetrics,
+  type CompanyCache,
+  type InsertCompanyCache,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, count, sql } from "drizzle-orm";
+import { eq, and, gte, lte, count, sql, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -98,6 +101,12 @@ export interface IStorage {
   getHistoricalGroomingMetrics(userId: string, weeks?: number): Promise<GroomingMetrics[]>;
   createGroomingMetrics(metrics: InsertGroomingMetrics): Promise<GroomingMetrics>;
   updateGroomingMetrics(id: number, updates: Partial<InsertGroomingMetrics>): Promise<GroomingMetrics | undefined>;
+
+  // Company cache methods (AD-3, AD-9)
+  getCompanyCache(companyName: string, domain: string | null): Promise<CompanyCache | undefined>;
+  getCompanyCacheByName(companyName: string): Promise<CompanyCache | undefined>;
+  upsertCompanyCache(entry: InsertCompanyCache): Promise<CompanyCache>;
+  updateCompanyCache(id: number, updates: Partial<InsertCompanyCache>): Promise<CompanyCache | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -529,6 +538,52 @@ export class DatabaseStorage implements IStorage {
 
   async updateGroomingMetrics(id: number, updates: Partial<InsertGroomingMetrics>): Promise<GroomingMetrics | undefined> {
     const [updated] = await db.update(groomingMetrics).set(updates).where(eq(groomingMetrics.id, id)).returning();
+    return updated || undefined;
+  }
+
+  // Company cache methods (AD-3, AD-9)
+  // NOTE: domain is nullable and Postgres unique indexes do not treat NULL as equal to NULL,
+  // so lookups/upserts are done manually here rather than relying on an ON CONFLICT target.
+  async getCompanyCache(companyName: string, domain: string | null): Promise<CompanyCache | undefined> {
+    const domainCondition = domain === null ? isNull(companyCache.domain) : eq(companyCache.domain, domain);
+    const [entry] = await db
+      .select()
+      .from(companyCache)
+      .where(and(eq(companyCache.companyName, companyName), domainCondition));
+    return entry || undefined;
+  }
+
+  async getCompanyCacheByName(companyName: string): Promise<CompanyCache | undefined> {
+    // Best-effort join for display purposes when the meeting's resolved domain isn't tracked on the meeting row.
+    const [entry] = await db
+      .select()
+      .from(companyCache)
+      .where(eq(companyCache.companyName, companyName))
+      .orderBy(sql`${companyCache.researchedAt} desc`)
+      .limit(1);
+    return entry || undefined;
+  }
+
+  async upsertCompanyCache(entry: InsertCompanyCache): Promise<CompanyCache> {
+    const existing = await this.getCompanyCache(entry.companyName, entry.domain ?? null);
+    if (existing) {
+      const [updated] = await db
+        .update(companyCache)
+        .set(entry)
+        .where(eq(companyCache.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(companyCache).values(entry).returning();
+    return created;
+  }
+
+  async updateCompanyCache(id: number, updates: Partial<InsertCompanyCache>): Promise<CompanyCache | undefined> {
+    const [updated] = await db
+      .update(companyCache)
+      .set(updates)
+      .where(eq(companyCache.id, id))
+      .returning();
     return updated || undefined;
   }
 }

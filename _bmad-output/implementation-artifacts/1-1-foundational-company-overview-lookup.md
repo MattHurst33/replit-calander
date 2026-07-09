@@ -1,6 +1,10 @@
+---
+baseline_commit: 02f4f2871676363918c8be9b61951fe647add111
+---
+
 # Story 1.1: Foundational Company Overview Lookup
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,33 +28,33 @@ So that I know who I'm meeting with without doing manual research.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0: Resolve the company-intelligence data source decision (AC: #3)**
-  - [ ] Evaluate Clearbit / Apollo / Crunchbase API / LLM web-search against cost, data completeness for FR-2.2 fields, and rate limits
-  - [ ] Document the decision and rationale in this story's Dev Agent Record (Completion Notes) — this resolves the Architecture Spine's "Deferred: Company intelligence data sources" item; do not proceed to Task 3 with an undocumented assumption
-  - [ ] Confirm required API key env var(s) and add to `.env` handling (never hardcode — see Consistency Conventions)
-- [ ] **Task 1: Company name resolution (AC: #1, #7)**
-  - [ ] Add resolution logic: parse domain from `meetings.attendeeEmail` (already populated by `extractMeetingData` in both integration files); if domain is in a generic-provider list (gmail.com, outlook.com, hotmail.com, yahoo.com, icloud.com, etc.), fall back to parsing `meetings.title` / `meetings.description`
-  - [ ] On failed resolution, set an explicit "unresolved company" state (new field or reuse `qualificationReason`-style status marker — do not silently leave `company` null and proceed)
-- [ ] **Task 2: `companyCache` schema + IStorage methods (AC: #3, #4, #5)**
-  - [ ] Add `companyCache` table to `shared/schema.ts` (see Dev Notes schema proposal below)
-  - [ ] Add `getCompanyCache(companyName, domain)`, `upsertCompanyCache(...)` to `IStorage` interface and `DatabaseStorage` (server/storage.ts) — no direct Drizzle calls elsewhere (AD-3)
-  - [ ] Add unique index on normalized `(companyName, domain)`
-- [ ] **Task 3: `CompanyIntelligenceService` (AC: #2, #3, #4, #5, #6, #8)**
-  - [ ] Create `server/services/company-intelligence.ts`, singleton export pattern matching existing services (e.g. `qualification-engine.ts`)
-  - [ ] `enrich(meeting)`: check cache first (AD-8/AD-9) → if hit and <24h, return cached → if hit and >24h, return stale data immediately + queue background refresh → if miss, call external source once, persist via IStorage
-  - [ ] Enforce 30s timeout on the external call (NFR-2); on timeout, mark meeting with research-timeout state, do not throw uncaught
-- [ ] **Task 4: Wire `enrich()` into the scanner pipeline (AC: #2)**
-  - [ ] `server/services/google-calendar-integration.ts` — insert `companyIntelligenceService.enrich(meeting)` between `storage.createMeeting(meetingData)` (currently line 152) and `this.qualificationEngine.qualifyMeeting(meeting.id)` (currently line 157)
-  - [ ] `server/services/outlook-integration.ts` — same insertion, between `storage.createMeeting(meetingData)` (currently line 132) and `this.qualificationEngine.qualifyMeeting(meeting.id)` (currently line 137). This file duplicates the Google integration's structure; apply the same change in both.
-  - [ ] Do not call `qualifyMeeting` if the company is unresolved (AC #7) — skip qualification and leave the meeting in its unresolved/pending state instead
-- [ ] **Task 5: Sync company fields onto `meetings` row (AC: #6)**
-  - [ ] Per the Architecture Spine's sequence diagram (`Intel->>DB: updateMeeting (company fields)`), `enrich()` must write back to the `meetings` row — not only to `companyCache` — so existing consumers keep working (see Dev Notes: Regression Risk below)
-  - [ ] Resolve the revenue type mismatch (see Dev Notes) before writing `meetings.revenue`
-- [ ] **Task 6: Display company snapshot (AC: #6)**
-  - [ ] Extend `GET /api/meetings` (server/routes.ts:234) to join/embed the company snapshot (overview, headquarters, founding year — the fields not already columns on `meetings`) alongside each meeting
-  - [ ] Extend `client/src/components/meeting-card.tsx` to render the additional snapshot fields (it currently only renders `revenue` and `companySize` inline, lines 198-207)
-- [ ] **Task 7: Verify TypeScript strict mode (AC: #9)**
-  - [ ] Run `npm run check` — zero errors
+- [x] **Task 0: Resolve the company-intelligence data source decision (AC: #3)**
+  - [x] Evaluate Clearbit / Apollo / Crunchbase API / LLM web-search against cost, data completeness for FR-2.2 fields, and rate limits
+  - [x] Document the decision and rationale in this story's Dev Agent Record (Completion Notes) — this resolves the Architecture Spine's "Deferred: Company intelligence data sources" item; do not proceed to Task 3 with an undocumented assumption
+  - [x] Confirm required API key env var(s) and add to `.env` handling (never hardcode — see Consistency Conventions)
+- [x] **Task 1: Company name resolution (AC: #1, #7)**
+  - [x] Add resolution logic: parse domain from `meetings.attendeeEmail` (already populated by `extractMeetingData` in both integration files); if domain is in a generic-provider list (gmail.com, outlook.com, hotmail.com, yahoo.com, icloud.com, etc.), fall back to parsing `meetings.title` / `meetings.description`
+  - [x] On failed resolution, set an explicit "unresolved company" state (new field or reuse `qualificationReason`-style status marker — do not silently leave `company` null and proceed)
+- [x] **Task 2: `companyCache` schema + IStorage methods (AC: #3, #4, #5)**
+  - [x] Add `companyCache` table to `shared/schema.ts` (see Dev Notes schema proposal below)
+  - [x] Add `getCompanyCache(companyName, domain)`, `upsertCompanyCache(...)` to `IStorage` interface and `DatabaseStorage` (server/storage.ts) — no direct Drizzle calls elsewhere (AD-3)
+  - [x] Add unique index on normalized `(companyName, domain)`
+- [x] **Task 3: `CompanyIntelligenceService` (AC: #2, #3, #4, #5, #6, #8)**
+  - [x] Create `server/services/company-intelligence.ts`, singleton export pattern matching existing services (e.g. `qualification-engine.ts`)
+  - [x] `enrich(meeting)`: check cache first (AD-8/AD-9) → if hit and <24h, return cached → if hit and >24h, return stale data immediately + queue background refresh → if miss, call external source once, persist via IStorage
+  - [x] Enforce 30s timeout on the external call (NFR-2); on timeout, mark meeting with research-timeout state, do not throw uncaught
+- [x] **Task 4: Wire `enrich()` into the scanner pipeline (AC: #2)**
+  - [x] `server/services/google-calendar-integration.ts` — insert `companyIntelligenceService.enrich(meeting)` between `storage.createMeeting(meetingData)` (currently line 152) and `this.qualificationEngine.qualifyMeeting(meeting.id)` (currently line 157)
+  - [x] `server/services/outlook-integration.ts` — same insertion, between `storage.createMeeting(meetingData)` (currently line 132) and `this.qualificationEngine.qualifyMeeting(meeting.id)` (currently line 137). This file duplicates the Google integration's structure; apply the same change in both.
+  - [x] Do not call `qualifyMeeting` if the company is unresolved (AC #7) — skip qualification and leave the meeting in its unresolved/pending state instead
+- [x] **Task 5: Sync company fields onto `meetings` row (AC: #6)**
+  - [x] Per the Architecture Spine's sequence diagram (`Intel->>DB: updateMeeting (company fields)`), `enrich()` must write back to the `meetings` row — not only to `companyCache` — so existing consumers keep working (see Dev Notes: Regression Risk below)
+  - [x] Resolve the revenue type mismatch (see Dev Notes) before writing `meetings.revenue`
+- [x] **Task 6: Display company snapshot (AC: #6)**
+  - [x] Extend `GET /api/meetings` (server/routes.ts:234) to join/embed the company snapshot (overview, headquarters, founding year — the fields not already columns on `meetings`) alongside each meeting
+  - [x] Extend `client/src/components/meeting-card.tsx` to render the additional snapshot fields (it currently only renders `revenue` and `companySize` inline, lines 198-207)
+- [x] **Task 7: Verify TypeScript strict mode (AC: #9)**
+  - [x] Run `npm run check` — zero errors
 
 ## Dev Notes
 
@@ -132,8 +136,41 @@ Unique index on `(companyName, domain)`. Stories 1.2–1.6 will later add `produ
 
 ### Agent Model Used
 
+Claude Sonnet 5 (claude-sonnet-5)
+
 ### Debug Log References
+
+- `npm run check` — initial failure: `tsconfig.json(17,27): error TS5103: Invalid value for '--ignoreDeprecations'` (confirmed pre-existing via `git stash` against baseline commit `02f4f28`)
+- `npm run check` — second failure (own new code): `server/services/company-intelligence.ts(189,25): error TS2802` (`matchAll` spread needs ES2015+ iteration) — fixed with `Array.from`
+- `npm run check` — final run: exit 0, zero errors
 
 ### Completion Notes List
 
+- **Task 0 decision:** Selected **OpenAI (LLM knowledge-based enrichment)** as the company-intelligence data source, using the already-installed `openai` SDK (^5.5.1). Rationale: no Clearbit/Apollo/Crunchbase API key is configured anywhere in this environment (checked `.env.example`, no matches), each would be a new paid vendor dependency requiring user signup/approval, whereas OpenAI is already a project dependency per Architecture Spine AD-2's `[ASSUMPTION: OpenAI is the LLM provider]` and needs only an API key. Trade-off accepted: enrichment relies on the model's training-data knowledge of companies rather than live web/news lookups, so very recent news (FR-2.4, Story 1.3) or small/obscure companies may return thin results — acceptable for this story's scope (FR-2.1/FR-2.2 core overview fields) and revisit if data quality proves insufficient once real usage data exists.
+- Added `OPENAI_API_KEY` to `.env.example` as a new required var (no code in the repo previously referenced the `openai` package at all — confirmed via search).
+- **companyCache lookup design decision:** `domain` is nullable (companies resolved via title/description fallback have no domain), and Postgres unique indexes treat NULL as distinct from NULL — so an `ON CONFLICT` upsert would silently insert duplicate rows for every no-domain company. Implemented `getCompanyCache`/`upsertCompanyCache` as explicit select-then-insert-or-update in application code instead of relying on `onConflictDoUpdate`, using `isNull()` when domain is null.
+- **Display join is by companyName only, not the full cache key:** `GET /api/meetings` and `meeting-card.tsx` needed the company snapshot (overview, headquarters, foundingYear) fields, but the `meetings` row only stores `company` (the resolved name), not `domain`. Added `getCompanyCacheByName()` as a best-effort display join (most-recently-researched match on name alone). Acceptable for this story's MVP scope; flagged as a design compromise, not a full re-verification against the original `(companyName, domain)` cache key.
+- **Revenue type resolution:** `meetings.revenue` is a precise decimal; company research returns a range string (e.g. "$10M-$50M"). Implemented `revenueRangeToEstimate()` — parses K/M/B-suffixed figures out of the range string and writes the midpoint as the numeric point-estimate, preserving `QualificationEngine.evaluateRule()`'s `Number(fieldValue) >= Number(ruleValue)` behavior. The full range string is preserved separately on `companyCache.revenueRange` for display.
+- **New meeting field:** Added `meetings.companyResearchStatus` (`'unresolved' | 'timeout' | 'completed'`, nullable) rather than overloading the existing `status` enum (which is locked to PRD FR-5.4's qualification statuses: pending/qualified/disqualified/needs_review/no_show/completed) — keeps company-research state and qualification state orthogonal.
+- **Qualification skip on incomplete data (AD-11):** Both integration files now skip `qualifyMeeting()` entirely when `enrich()` returns `unresolved` or `timeout` status, per AD-11's "no qualifying against incomplete data." The meeting is still counted as `processed` so scan stats stay accurate; the rep sees an explicit indicator on the card instead of a silently-empty qualification.
+- **Company name extraction heuristic (Task 1):** Implemented as a best-effort regex (`with <Company>` / `<Company> meeting|call|demo|...`) since the PRD does not specify an extraction algorithm — returns `null` (→ unresolved state) rather than guessing when no pattern matches. This is a reasonable starting heuristic, not NLP-grade parsing; worth revisiting if unresolved-rate proves too high in practice.
+- **Pre-existing, unrelated bug fixed to unblock verification:** `tsconfig.json` had `"ignoreDeprecations": "6.0"`, which is not a valid value for the project's pinned TypeScript 5.6.3 (confirmed via `npx tsc --version`) and caused `npm run check` to fail immediately with `TS5103` on every file, including before any change in this story (verified via `git stash`). Removed the line entirely — TS 5.6.3 does not need it, and the `baseUrl` deprecation warning it was meant to silence only applies to newer TypeScript versions than what this project uses. This was necessary because AC #9 requires `npm run check` to pass, and it could not run at all beforehand.
+- **`npm run check` passes with zero errors** after the above fix and one real fix in this story's own new code (see File List) — a `matchAll(...)` spread required ES2015+ iteration support the project's TS target doesn't have; changed to `Array.from(...)`.
+- **Not run:** `npm run db:push` (Drizzle schema migration) — a schema-changing operation against a real database is left for the user to run explicitly rather than executed automatically as part of this story.
+- **No automated tests added:** confirmed (again, at implementation time) that no test framework (vitest/jest/mocha) exists in this repo. Per this story's own Dev Notes, introducing one is out of scope. Verified behavior by tracing each acceptance criterion against the implementation logic and by the passing `npm run check`. This is a deviation from the general dev-story workflow's red-green-refactor expectation, made deliberately and documented here rather than silently skipped.
+
+## Change Log
+
+- 2026-07-08 — Implemented Story 1.1: `CompanyIntelligenceService` (cache-first, stale-while-revalidate, 30s timeout), `companyCache` schema + IStorage methods, company-name resolution, scanner-pipeline wiring in both calendar integrations, company snapshot API/UI display. Fixed a pre-existing invalid `tsconfig.json` compiler option that blocked `npm run check` entirely.
+
 ### File List
+
+- `server/services/company-intelligence.ts` (new) — `CompanyIntelligenceService`: company resolution, cache-first enrichment, stale-while-revalidate, 30s timeout, OpenAI research call
+- `shared/schema.ts` (modified) — added `companyCache` table, `meetings.companyResearchStatus` column, insert schema + types
+- `server/storage.ts` (modified) — added `getCompanyCache`, `getCompanyCacheByName`, `upsertCompanyCache`, `updateCompanyCache` to `IStorage` + `DatabaseStorage`
+- `server/services/google-calendar-integration.ts` (modified) — calls `companyIntelligenceService.enrich()` between meeting creation and qualification; skips qualification on unresolved/timeout
+- `server/services/outlook-integration.ts` (modified) — same change as above (mirrors Google integration structure)
+- `server/routes.ts` (modified) — `GET /api/meetings` now embeds `companyOverview`, `companyHeadquarters`, `companyFoundingYear` per meeting
+- `client/src/components/meeting-card.tsx` (modified) — renders company overview/HQ/founding year, and unresolved/timeout indicators
+- `.env.example` (modified) — added `OPENAI_API_KEY`
+- `tsconfig.json` (modified) — removed invalid `ignoreDeprecations: "6.0"` (pre-existing bug, unrelated to this story's feature work, blocked AC #9 verification)
